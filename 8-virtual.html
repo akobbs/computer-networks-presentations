@@ -1,0 +1,621 @@
+<!DOCTYPE html><html lang="uk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Технології віртуальних мереж</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><style>* {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #editor-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #editor-container.hidden {
+            display: none;
+        }
+
+        #editor-header {
+            background: #2d3748;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #editor-header h2 {
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        #editor-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #4a5568;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #2d3748;
+        }
+
+        #markdown-input {
+            flex: 1;
+            padding: 2rem;
+            background: #1a202c;
+            color: #e2e8f0;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: none;
+        }
+
+        #markdown-input:focus {
+            outline: none;
+        }
+
+        .slide-container {
+            position: relative;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+        }
+
+        .slide {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 3rem;
+            position: relative;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .slide::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .slide::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        .slide h1 {
+            color: #667eea;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        .slide h2 {
+            color: #764ba2;
+            font-size: 2rem;
+            margin: 2rem 0 1rem 0;
+        }
+
+        .slide h3 {
+            color: #4a5568;
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .slide p {
+            color: #2d3748;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        .slide ul, .slide ol {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .slide li {
+            color: #2d3748;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 0.5rem;
+        }
+
+        .slide pre {
+            background: #282c34;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        .slide pre code {
+            background: transparent;
+            color: #abb2bf;
+        }
+
+        .slide code {
+            font-family: 'Courier New', Consolas, Monaco, monospace;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .slide h1 code, .slide h2 code, .slide h3 code {
+            font-size: 0.85em;
+            background: rgba(237, 242, 247, 0.5);
+            padding: 0.1em 0.3em;
+            border-radius: 3px;
+        }
+
+        .slide p code {
+            background: #edf2f7;
+            color: #e53e3e;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .slide blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 1.5rem;
+            margin: 1.5rem 0;
+            font-style: italic;
+            color: #4a5568;
+        }
+
+        .slide img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .slide table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .slide th, .slide td {
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .slide th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        .slide tr:nth-child(even) {
+            background: #f7fafc;
+        }
+
+        .note {
+            background: #fff5f5;
+            border-left: 4px solid #fc8181;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .note strong {
+            color: #c53030;
+        }
+
+        .warning {
+            background: #fffaf0;
+            border-left: 4px solid #f6ad55;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .warning strong {
+            color: #c05621;
+        }
+
+        .info {
+            background: #ebf8ff;
+            border-left: 4px solid #4299e1;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .info strong {
+            color: #2c5282;
+        }
+
+        .success {
+            background: #f0fff4;
+            border-left: 4px solid #48bb78;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .success strong {
+            color: #22543d;
+        }
+
+        .danger {
+            background: #fff5f5;
+            border-left: 4px solid #f56565;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .danger strong {
+            color: #742a2a;
+        }
+
+        .tip {
+            background: #fefcbf;
+            border-left: 4px solid #ecc94b;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .tip strong {
+            color: #744210;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: 100;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: white;
+            transition: width 0.3s;
+        }
+
+        .slide-number {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            color: #667eea;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #sidebar {
+            position: fixed;
+            right: -320px;
+            top: 0;
+            width: 320px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            transition: right 0.3s ease;
+            z-index: 200;
+            padding: 1rem;
+        }
+
+        #sidebar.open {
+            right: 0;
+        }
+
+        #sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 3px;
+        }
+
+        #sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #667eea;
+        }
+
+        #sidebar-header h3 {
+            color: #667eea;
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        #sidebar-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #4a5568;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+
+        #sidebar-close:hover {
+            color: #667eea;
+        }
+
+        .slide-thumbnail {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            overflow: hidden;
+        }
+
+        .slide-thumbnail:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+            transform: translateX(-4px);
+        }
+
+        .slide-thumbnail.active {
+            border-color: #667eea;
+            background: #f7faff;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .slide-thumbnail-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .slide-thumbnail-content {
+            font-size: 0.85rem;
+            color: #2d3748;
+            line-height: 1.4;
+            max-height: 4.2rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slide-thumbnail-content::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 50%;
+            height: 1.4rem;
+            background: linear-gradient(to right, transparent, white);
+        }
+
+        .slide-thumbnail.active .slide-thumbnail-content::after {
+            background: linear-gradient(to right, transparent, #f7faff);
+        }
+
+        .slide-thumbnail-title {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 0.25rem;
+        }
+
+        #sidebar-toggle {
+            position: fixed;
+            right: 1rem;
+            top: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 8px;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 150;
+        }
+
+        #sidebar-toggle:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+
+        .mermaid {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+            overflow: visible; /* щоб не обрізати тіні / розширені ноди */
+        }
+
+        /* Запобігаємо обрізанню останньої літери в нодах Mermaid через зміну font-weight після розрахунку розміру */
+        .mermaid svg { overflow: visible !important; }
+        /* перестраховка проти обрізання foreignObject (на випадок інших діаграм) */
+        .mermaid svg foreignObject { overflow: visible !important; }
+
+        .plantuml-diagram {
+            max-width: 100%;
+            height: auto;
+            margin: 1.5rem auto;
+            display: block;
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #help-overlay {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+            transition: opacity 0.3s;
+        }
+
+        #help-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #help-overlay kbd {
+            background: #2d3748;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+
+        .mermaid-error {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            padding: 1rem;
+            border-radius: 6px;
+            color: #742a2a;
+            margin: 1.5rem 0;
+        }
+
+        .mermaid-error pre {
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            white-space: pre-wrap;
+        }
+
+        /* Повноекранний режим - зберігаємо оригінальний фон */
+        #presentation-container:fullscreen {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        #presentation-container:-webkit-full-screen {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        #presentation-container:-moz-full-screen {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        #presentation-container:-ms-fullscreen {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+#presentation-container:fullscreen,#presentation-container:-webkit-full-screen,#presentation-container:-moz-full-screen,#presentation-container:-ms-fullscreen{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%)!important;}</style></head><body><div id="presentation-container"><div class="progress"><div class="progress-bar" id="progress-bar"></div></div><button id="sidebar-toggle" onclick="toggleSidebar()" title="Навігація слайдами (S)">☰</button><div id="sidebar"><div id="sidebar-header"><h3>📑 Слайди</h3><button id="sidebar-close" onclick="toggleSidebar()">✕</button></div><div id="sidebar-content"></div></div><div class="slide-container"><div class="slide" id="current-slide"></div></div><div class="controls"><button class="control-btn" onclick="previousSlide()" title="Попередній (←)">←</button><button class="control-btn" onclick="nextSlide()" title="Наступний (→)">→</button><button class="control-btn" onclick="toggleFullscreen()" title="Повноекранний режим (F)">⛶</button><button class="control-btn" onclick="toggleHelp()" title="Допомога (?)">?</button></div><div class="slide-number" id="slide-number">1 / 18</div><div id="help-overlay" class="hidden"><strong>Гарячі клавіші:</strong><br><kbd>←</kbd> <kbd>→</kbd> Навігація<br><kbd>F</kbd> Повноекранний режим<br><kbd>S</kbd> Sidebar<br><kbd>?</kbd> Допомога<br><kbd>Esc</kbd> Закрити</div></div><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script><script>const slides=["<h1>Технології віртуальних мереж</h1>\n<p><strong>Організація комп'ютерних мереж</strong></p>\n<p>Лектор: Кобилянський Антон</p>\n","<h1>📋 План лекції</h1>\n<ol>\n<li>🤔 Проблеми \"плоских\" локальних мереж</li>\n<li>🌐 Що таке VLAN та як це працює</li>\n<li>🏷️ Тегування кадрів: стандарт IEEE 802.1Q</li>\n<li>🔌 Типи портів: access та trunk</li>\n<li>⚙️ Налаштування VLAN на комутаторі Cisco</li>\n<li>🔗 Маршрутизація між VLAN</li>\n<li>✅ Ключові висновки та контрольні питання</li>\n</ol>\n","<h1>🤔 Проблеми великих локальних мереж</h1>\n<div class=\"info\"><strong>ℹ️ Ситуація</strong> <p>У звичайній мережі всі комп'ютери, підключені до комутаторів, знаходяться в <strong>одному широкомовному домені</strong> — тобто \"чують\" один одного.</p>\n</div>\n\n\n\n<p><strong>Головна ідея:</strong> Коли мережа розростається, це спричиняє проблеми продуктивності, безпеки та керованості.</p>\n<h2>⚠️ Основні проблеми</h2>\n<table>\n<thead>\n<tr>\n<th>Проблема</th>\n<th>Наслідок</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>📢 Широкомовний трафік</td>\n<td>ARP, DHCP-запити доходять до всіх пристроїв</td>\n</tr>\n<tr>\n<td>🐢 Зниження продуктивності</td>\n<td>Кожен пристрій обробляє зайві пакети</td>\n</tr>\n<tr>\n<td>🔓 Відсутність ізоляції</td>\n<td>Бухгалтерія \"бачить\" комп'ютери розробників</td>\n</tr>\n<tr>\n<td>🏢 Фізична прив'язка</td>\n<td>Групи користувачів обмежені розташуванням кабелів</td>\n</tr>\n<tr>\n<td>🛠️ Складність керування</td>\n<td>Зміна структури потребує перекомутації</td>\n</tr>\n</tbody></table>\n<div class=\"warning\"><strong>⚠️ Приклад</strong> <p>В офісі на 200 комп'ютерів кожен ARP-запит надсилається на всі 200 пристроїв. При активній роботі це створює значне фонове навантаження на мережу.</p>\n</div>\n\n","<h1>🌐 VLAN: ідея технології</h1>\n<div class=\"info\"><strong>ℹ️ Визначення</strong> <p><strong>VLAN</strong> (Virtual Local Area Network / Віртуальна локальна мережа) — логічна група пристроїв, яка поводиться як окрема локальна мережа, незалежно від фізичного розташування пристроїв.</p>\n</div>\n\n\n\n<p><strong>Головна ідея:</strong> VLAN дозволяє розділити один фізичний комутатор на кілька незалежних \"віртуальних\" комутаторів.</p>\n<h2>💡 Аналогія</h2>\n<p>Уявіть багатоквартирний будинок:</p>\n<ul>\n<li><strong>Без VLAN:</strong> усі квартири — це одне велике приміщення без стін</li>\n<li><strong>З VLAN:</strong> стіни розділяють простір на окремі квартири, хоча будинок — один</li>\n</ul>\n<h2>🎯 Що дає VLAN</h2>\n<ul>\n<li>🛡️ <strong>Ізоляція трафіку</strong> — пристрої різних VLAN не бачать один одного на L2</li>\n<li>📉 <strong>Зменшення broadcast-трафіку</strong> — кожен VLAN має власний широкомовний домен</li>\n<li>🧩 <strong>Логічна організація</strong> — групування за відділами, а не за кабелями</li>\n<li>🔐 <strong>Підвищення безпеки</strong> — обмеження доступу між групами</li>\n<li>🔄 <strong>Гнучкість</strong> — зміна групи без переключення кабелів</li>\n</ul>\n","<h1>🏗️ VLAN: як це виглядає</h1>\n<p><strong>Головна ідея:</strong> Один фізичний комутатор обслуговує кілька VLAN одночасно — наче всередині нього є кілька окремих комутаторів.</p>\n\n<div class=\"mermaid\" data-source=\"graph TB\n    subgraph SW[&quot;🔲 Фізичний комутатор&quot;]\n        direction LR\n        V10[&quot;VLAN 10&lt;br/&gt;Бухгалтерія&quot;]\n        V20[&quot;VLAN 20&lt;br/&gt;Розробка&quot;]\n        V30[&quot;VLAN 30&lt;br/&gt;Гості&quot;]\n    end\n    PC1[&quot;💻 PC1&quot;] --&gt; V10\n    PC2[&quot;💻 PC2&quot;] --&gt; V10\n    PC3[&quot;💻 PC3&quot;] --&gt; V20\n    PC4[&quot;💻 PC4&quot;] --&gt; V20\n    PC5[&quot;💻 PC5&quot;] --&gt; V30\n    style V10 fill:#e8f5e9,stroke:#388e3c\n    style V20 fill:#e3f2fd,stroke:#1565c0\n    style V30 fill:#fff3e0,stroke:#ef6c00\n    style SW fill:#fff9c4,stroke:#f9a825\"><svg id=\"exp-1776625949317-4-0\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" class=\"flowchart\" style=\"max-width: 782.11328125px;\" viewBox=\"0 0 782.11328125 236\" role=\"graphics-document document\" aria-roledescription=\"flowchart-v2\"><style>#exp-1776625949317-4-0{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#exp-1776625949317-4-0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#exp-1776625949317-4-0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#exp-1776625949317-4-0 .error-icon{fill:#552222;}#exp-1776625949317-4-0 .error-text{fill:#552222;stroke:#552222;}#exp-1776625949317-4-0 .edge-thickness-normal{stroke-width:1px;}#exp-1776625949317-4-0 .edge-thickness-thick{stroke-width:3.5px;}#exp-1776625949317-4-0 .edge-pattern-solid{stroke-dasharray:0;}#exp-1776625949317-4-0 .edge-thickness-invisible{stroke-width:0;fill:none;}#exp-1776625949317-4-0 .edge-pattern-dashed{stroke-dasharray:3;}#exp-1776625949317-4-0 .edge-pattern-dotted{stroke-dasharray:2;}#exp-1776625949317-4-0 .marker{fill:#333333;stroke:#333333;}#exp-1776625949317-4-0 .marker.cross{stroke:#333333;}#exp-1776625949317-4-0 svg{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;}#exp-1776625949317-4-0 p{margin:0;}#exp-1776625949317-4-0 .label{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;color:#333;}#exp-1776625949317-4-0 .cluster-label text{fill:#333;}#exp-1776625949317-4-0 .cluster-label span{color:#333;}#exp-1776625949317-4-0 .cluster-label span p{background-color:transparent;}#exp-1776625949317-4-0 .label text,#exp-1776625949317-4-0 span{fill:#333;color:#333;}#exp-1776625949317-4-0 .node rect,#exp-1776625949317-4-0 .node circle,#exp-1776625949317-4-0 .node ellipse,#exp-1776625949317-4-0 .node polygon,#exp-1776625949317-4-0 .node path{fill:#ECECFF;stroke:#667eea;stroke-width:1px;}#exp-1776625949317-4-0 .rough-node .label text,#exp-1776625949317-4-0 .node .label text,#exp-1776625949317-4-0 .image-shape .label,#exp-1776625949317-4-0 .icon-shape .label{text-anchor:middle;}#exp-1776625949317-4-0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#exp-1776625949317-4-0 .rough-node .label,#exp-1776625949317-4-0 .node .label,#exp-1776625949317-4-0 .image-shape .label,#exp-1776625949317-4-0 .icon-shape .label{text-align:center;}#exp-1776625949317-4-0 .node.clickable{cursor:pointer;}#exp-1776625949317-4-0 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#exp-1776625949317-4-0 .arrowheadPath{fill:#333333;}#exp-1776625949317-4-0 .edgePath .path{stroke:#333333;stroke-width:1px;}#exp-1776625949317-4-0 .flowchart-link{stroke:#333333;fill:none;}#exp-1776625949317-4-0 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1776625949317-4-0 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#exp-1776625949317-4-0 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1776625949317-4-0 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#exp-1776625949317-4-0 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#exp-1776625949317-4-0 .cluster text{fill:#333;}#exp-1776625949317-4-0 .cluster span{color:#333;}#exp-1776625949317-4-0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#exp-1776625949317-4-0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#exp-1776625949317-4-0 rect.text{fill:none;stroke-width:0;}#exp-1776625949317-4-0 .icon-shape,#exp-1776625949317-4-0 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1776625949317-4-0 .icon-shape p,#exp-1776625949317-4-0 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#exp-1776625949317-4-0 .icon-shape .label rect,#exp-1776625949317-4-0 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1776625949317-4-0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#exp-1776625949317-4-0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#exp-1776625949317-4-0 .node .neo-node{stroke:#667eea;}#exp-1776625949317-4-0 [data-look=\"neo\"].node rect,#exp-1776625949317-4-0 [data-look=\"neo\"].cluster rect,#exp-1776625949317-4-0 [data-look=\"neo\"].node polygon{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949317-4-0 [data-look=\"neo\"].node path{stroke:#667eea;stroke-width:1px;}#exp-1776625949317-4-0 [data-look=\"neo\"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949317-4-0 [data-look=\"neo\"].node .neo-line path{stroke:#667eea;filter:none;}#exp-1776625949317-4-0 [data-look=\"neo\"].node circle{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949317-4-0 [data-look=\"neo\"].node circle .state-start{fill:#000000;}#exp-1776625949317-4-0 [data-look=\"neo\"].icon-shape .icon{fill:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949317-4-0 [data-look=\"neo\"].icon-shape .icon-neo path{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949317-4-0 :root{--mermaid-font-family:\"trebuchet ms\",verdana,arial,sans-serif;}</style><g><marker id=\"exp-1776625949317-4-0_flowchart-v2-pointEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 0 L 10 5 L 0 10 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949317-4-0_flowchart-v2-pointStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"4.5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 5 L 10 10 L 10 0 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949317-4-0_flowchart-v2-pointEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"11.5\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"10.5\" markerHeight=\"14\" orient=\"auto\"><path d=\"M 0 0 L 11.5 7 L 0 14 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949317-4-0_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></polygon></marker><marker id=\"exp-1776625949317-4-0_flowchart-v2-circleEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"11\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1776625949317-4-0_flowchart-v2-circleStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-1\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1776625949317-4-0_flowchart-v2-circleEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refY=\"5\" refX=\"12.25\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1776625949317-4-0_flowchart-v2-circleStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-2\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1776625949317-4-0_flowchart-v2-crossEnd\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"12\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949317-4-0_flowchart-v2-crossStart\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"-1\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949317-4-0_flowchart-v2-crossEnd-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"17.7\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5;\"></path></marker><marker id=\"exp-1776625949317-4-0_flowchart-v2-crossStart-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"-3.5\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5; stroke-dasharray: 1, 0;\"></path></marker><g class=\"root\"><g class=\"clusters\"><g class=\"cluster \" id=\"exp-1776625949317-4-0-SW\" data-look=\"classic\"><rect style=\"fill:#fff9c4 !important;stroke:#f9a825 !important\" x=\"8\" y=\"106\" width=\"766.11328125\" height=\"122\"></rect><g class=\"cluster-label \" transform=\"translate(303.169921875, 106)\"><g><rect class=\"background\" style=\"stroke: none\"></rect><text y=\"-10.1\" style=\"\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\"><tspan font-style=\"normal\" class=\"text-inner-tspan\" font-weight=\"normal\">🔲</tspan><tspan font-style=\"normal\" class=\"text-inner-tspan\" font-weight=\"normal\"> Фізичний</tspan><tspan font-style=\"normal\" class=\"text-inner-tspan\" font-weight=\"normal\"> комутатор</tspan></tspan></text></g></g></g></g><g class=\"edgePaths\"><path d=\"M79.703,56L79.703,60.167C79.703,64.333,79.703,72.667,79.703,81C79.703,89.333,79.703,97.667,84.224,105.575C88.745,113.483,97.786,120.966,102.307,124.708L106.828,128.45\" id=\"exp-1776625949317-4-0-L_PC1_V10_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_PC1_V10_0\" data-points=\"W3sieCI6NzkuNzAzMTI1LCJ5Ijo1Nn0seyJ4Ijo3OS43MDMxMjUsInkiOjgxfSx7IngiOjc5LjcwMzEyNSwieSI6MTA2fSx7IngiOjEwOS45MDkzMjM3NzA0OTE4LCJ5IjoxMzF9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1776625949317-4-0_flowchart-v2-pointEnd)\"></path><path d=\"M227.109,56L227.109,60.167C227.109,64.333,227.109,72.667,227.109,81C227.109,89.333,227.109,97.667,222.589,105.575C218.068,113.483,209.026,120.966,204.505,124.708L199.985,128.45\" id=\"exp-1776625949317-4-0-L_PC2_V10_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_PC2_V10_0\" data-points=\"W3sieCI6MjI3LjEwOTM3NSwieSI6NTZ9LHsieCI6MjI3LjEwOTM3NSwieSI6ODF9LHsieCI6MjI3LjEwOTM3NSwieSI6MTA2fSx7IngiOjE5Ni45MDMxNzYyMjk1MDgyLCJ5IjoxMzF9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1776625949317-4-0_flowchart-v2-pointEnd)\"></path><path d=\"M375.82,56L375.82,60.167C375.82,64.333,375.82,72.667,375.82,81C375.82,89.333,375.82,97.667,380.394,105.578C384.968,113.489,394.116,120.977,398.69,124.722L403.264,128.466\" id=\"exp-1776625949317-4-0-L_PC3_V20_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_PC3_V20_0\" data-points=\"W3sieCI6Mzc1LjgyMDMxMjUsInkiOjU2fSx7IngiOjM3NS44MjAzMTI1LCJ5Ijo4MX0seyJ4IjozNzUuODIwMzEyNSwieSI6MTA2fSx7IngiOjQwNi4zNTk1MDMwNzM3NzA1LCJ5IjoxMzF9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1776625949317-4-0_flowchart-v2-pointEnd)\"></path><path d=\"M524.852,56L524.852,60.167C524.852,64.333,524.852,72.667,524.852,81C524.852,89.333,524.852,97.667,520.278,105.578C515.704,113.489,506.556,120.977,501.982,124.722L497.408,128.466\" id=\"exp-1776625949317-4-0-L_PC4_V20_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_PC4_V20_0\" data-points=\"W3sieCI6NTI0Ljg1MTU2MjUsInkiOjU2fSx7IngiOjUyNC44NTE1NjI1LCJ5Ijo4MX0seyJ4Ijo1MjQuODUxNTYyNSwieSI6MTA2fSx7IngiOjQ5NC4zMTIzNzE5MjYyMjk1LCJ5IjoxMzF9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1776625949317-4-0_flowchart-v2-pointEnd)\"></path><path d=\"M682.641,56L682.641,60.167C682.641,64.333,682.641,72.667,682.641,81C682.641,89.333,682.641,97.667,682.641,105.333C682.641,113,682.641,120,682.641,123.5L682.641,127\" id=\"exp-1776625949317-4-0-L_PC5_V30_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_PC5_V30_0\" data-points=\"W3sieCI6NjgyLjY0MDYyNSwieSI6NTZ9LHsieCI6NjgyLjY0MDYyNSwieSI6ODF9LHsieCI6NjgyLjY0MDYyNSwieSI6MTA2fSx7IngiOjY4Mi42NDA2MjUsInkiOjEzMX1d\" data-look=\"classic\" marker-end=\"url(#exp-1776625949317-4-0_flowchart-v2-pointEnd)\"></path></g><g class=\"edgeLabels\"><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_PC1_V10_0\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_PC2_V10_0\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_PC3_V20_0\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_PC4_V20_0\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_PC5_V30_0\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g></g><g class=\"nodes\"><g class=\"node default  \" id=\"exp-1776625949317-4-0-flowchart-V10-0\" data-look=\"classic\" transform=\"translate(153.40625, 167)\"><rect class=\"basic label-container\" style=\"fill:#e8f5e9 !important;stroke:#388e3c !important\" x=\"-68.40625\" y=\"-36\" width=\"136.8125\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-44.40625, -24)\"><rect></rect><foreignObject width=\"88.8125\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>VLAN 10<br>Бухгалтерія</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949317-4-0-flowchart-V20-1\" data-look=\"classic\" transform=\"translate(450.3359375, 167)\"><rect class=\"basic label-container\" style=\"fill:#e3f2fd !important;stroke:#1565c0 !important\" x=\"-60.14453125\" y=\"-36\" width=\"120.2890625\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-36.14453125, -24)\"><rect></rect><foreignObject width=\"72.2890625\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>VLAN 20<br>Розробка</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949317-4-0-flowchart-V30-2\" data-look=\"classic\" transform=\"translate(682.640625, 167)\"><rect class=\"basic label-container\" style=\"fill:#fff3e0 !important;stroke:#ef6c00 !important\" x=\"-56.47265625\" y=\"-36\" width=\"112.9453125\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-32.47265625, -24)\"><rect></rect><foreignObject width=\"64.9453125\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>VLAN 30<br>Гості</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949317-4-0-flowchart-PC1-3\" data-look=\"classic\" transform=\"translate(79.703125, 32)\"><rect class=\"basic label-container\" style=\"\" x=\"-48.14453125\" y=\"-24\" width=\"96.2890625\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-24.14453125, -12)\"><rect></rect><foreignObject width=\"48.2890625\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>💻 PC1</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949317-4-0-flowchart-PC2-5\" data-look=\"classic\" transform=\"translate(227.109375, 32)\"><rect class=\"basic label-container\" style=\"\" x=\"-49.26171875\" y=\"-24\" width=\"98.5234375\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-25.26171875, -12)\"><rect></rect><foreignObject width=\"50.5234375\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>💻 PC2</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949317-4-0-flowchart-PC3-7\" data-look=\"classic\" transform=\"translate(375.8203125, 32)\"><rect class=\"basic label-container\" style=\"\" x=\"-49.44921875\" y=\"-24\" width=\"98.8984375\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-25.44921875, -12)\"><rect></rect><foreignObject width=\"50.8984375\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>💻 PC3</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949317-4-0-flowchart-PC4-9\" data-look=\"classic\" transform=\"translate(524.8515625, 32)\"><rect class=\"basic label-container\" style=\"\" x=\"-49.58203125\" y=\"-24\" width=\"99.1640625\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-25.58203125, -12)\"><rect></rect><foreignObject width=\"51.1640625\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>💻 PC4</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949317-4-0-flowchart-PC5-11\" data-look=\"classic\" transform=\"translate(682.640625, 32)\"><rect class=\"basic label-container\" style=\"\" x=\"-49.37890625\" y=\"-24\" width=\"98.7578125\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-25.37890625, -12)\"><rect></rect><foreignObject width=\"50.7578125\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>💻 PC5</p></span></div></foreignObject></g></g></g></g></g><defs><filter id=\"exp-1776625949317-4-0-drop-shadow\" height=\"130%\" width=\"130%\"><feDropShadow dx=\"4\" dy=\"4\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs><defs><filter id=\"exp-1776625949317-4-0-drop-shadow-small\" height=\"150%\" width=\"150%\"><feDropShadow dx=\"2\" dy=\"2\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs></svg></div>\n<div class=\"tip\"><strong>💡 Важливо</strong> <p>Пристрої в різних VLAN <strong>не можуть</strong> спілкуватися напряму на канальному рівні, навіть якщо підключені до одного комутатора. Для зв'язку між VLAN потрібен маршрутизатор (L3).</p>\n</div>\n\n","<h1>🏷️ Рівень OSI та VLAN ID</h1>\n<div class=\"info\"><strong>ℹ️ Розташування</strong> <p>VLAN — це технологія <strong>канального рівня (L2)</strong> моделі OSI. Саме тому VLAN реалізується на комутаторах.</p>\n</div>\n\n\n\n<p><strong>Головна ідея:</strong> Кожна VLAN має унікальний ідентифікатор — <strong>VLAN ID</strong> — який визначає її приналежність.</p>\n<h2>🔢 Діапазон VLAN ID</h2>\n<table>\n<thead>\n<tr>\n<th>Діапазон</th>\n<th>Призначення</th>\n</tr>\n</thead>\n<tbody><tr>\n<td><strong>0, 4095</strong></td>\n<td>Зарезервовані стандартом — не використовуються</td>\n</tr>\n<tr>\n<td><strong>1</strong></td>\n<td>VLAN за замовчуванням (default) — усі порти тут</td>\n</tr>\n<tr>\n<td><strong>2–1001</strong></td>\n<td>Звичайний діапазон (normal range)</td>\n</tr>\n<tr>\n<td><strong>1002–1005</strong></td>\n<td>Зарезервовано для Token Ring та FDDI (історично)</td>\n</tr>\n<tr>\n<td><strong>1006–4094</strong></td>\n<td>Розширений діапазон (extended range)</td>\n</tr>\n</tbody></table>\n<div class=\"note\"><strong>📝 Практика</strong> <p>У навчальних та більшості виробничих сценаріїв використовується звичайний діапазон <strong>2–1001</strong>. VLAN 1 не застосовують для користувацького трафіку з міркувань безпеки.</p>\n</div>\n\n","<h1>🏷️ Тегування кадрів: IEEE 802.1Q</h1>\n<p><strong>Головна ідея:</strong> Щоб комутатори знали, до якого VLAN належить кадр, до нього додається спеціальна 4-байтна мітка — <strong>тег 802.1Q</strong>.</p>\n<h2>📦 Структура тегованого кадру</h2>\n<pre><code class=\"language-plaintext hljs\" data-highlighted=\"yes\">┌──────────┬─────────┬────────────┬──────┬─────────┬─────┐\n│ Dest MAC │ Src MAC │ 802.1Q TAG │ Type │ Data    │ FCS │\n│ 6 байт   │ 6 байт  │ 4 байти    │      │         │     │\n└──────────┴─────────┴────────────┴──────┴─────────┴─────┘\n                          │\n                          ▼\n        ┌─────────────┬──────────────────────┐\n        │ TPID        │ TCI                  │\n        │ 2 байти     │ 2 байти              │\n        │ (0x8100)    │                      │\n        └─────────────┴──────────────────────┘\n                               │\n                               ▼\n                  ┌─────┬─────┬──────────────┐\n                  │ PCP │ DEI │ VLAN ID      │\n                  │ 3 б │ 1 б │ 12 біт       │\n                  └─────┴─────┴──────────────┘</code></pre><h2>🔑 Ключові поля тегу</h2>\n<table>\n<thead>\n<tr>\n<th>Поле</th>\n<th>Розмір</th>\n<th>Призначення</th>\n</tr>\n</thead>\n<tbody><tr>\n<td><strong>TPID</strong></td>\n<td>2 байти</td>\n<td>Ідентифікатор типу протоколу (значення <code>0x8100</code>)</td>\n</tr>\n<tr>\n<td><strong>TCI</strong></td>\n<td>2 байти</td>\n<td>Контрольна інформація тегу (містить PCP, DEI, VID)</td>\n</tr>\n<tr>\n<td><strong>PCP</strong></td>\n<td>3 біти</td>\n<td>Пріоритет кадру для QoS (8 рівнів: 0–7)</td>\n</tr>\n<tr>\n<td><strong>DEI</strong></td>\n<td>1 біт</td>\n<td>Ознака \"можна відкинути при перевантаженні\"</td>\n</tr>\n<tr>\n<td><strong>VLAN ID</strong></td>\n<td>12 біт</td>\n<td>Номер VLAN (діапазон 0–4095)</td>\n</tr>\n</tbody></table>\n<div class=\"tip\"><strong>💡 Чому саме 12 біт?</strong> <p>Поле VLAN ID має розмір 12 біт, тому теоретично можна закодувати 2¹² = 4096 значень. Два з них (0 і 4095) зарезервовані стандартом, тому реально доступно <strong>4094</strong> унікальних VLAN.</p>\n</div>\n\n","<h1>🔌 Access та Trunk порти</h1>\n<div class=\"info\"><strong>ℹ️ Два типи портів</strong> <p>Порт комутатора може працювати в одному з двох основних режимів залежно від того, скільки VLAN він обслуговує.</p>\n</div>\n\n\n\n<h2>🎯 Access port (порт доступу)</h2>\n<ul>\n<li>Належить <strong>одному</strong> конкретному VLAN</li>\n<li>Передає <strong>нетегований</strong> трафік</li>\n<li>Використовується для підключення <strong>кінцевих пристроїв</strong> (ПК, принтери, IP-телефони)</li>\n<li>Пристрій \"не знає\" про існування VLAN</li>\n</ul>\n<h2>🛣️ Trunk port (магістральний порт)</h2>\n<ul>\n<li>Передає трафік <strong>кількох VLAN</strong> одночасно</li>\n<li>Кадри передаються <strong>з тегами</strong> 802.1Q</li>\n<li>Використовується для з'єднань <strong>між комутаторами</strong> або до маршрутизатора</li>\n<li>Має поняття <strong>Native VLAN</strong> — єдиний VLAN, трафік якого передається без тегу</li>\n</ul>\n\n<div class=\"mermaid\" data-source=\"graph LR\n    PC1[&quot;💻 PC&lt;br/&gt;VLAN 10&quot;] ---|&quot;Access&quot;| SW1[&quot;🔲 Switch 1&quot;]\n    PC2[&quot;💻 PC&lt;br/&gt;VLAN 20&quot;] ---|&quot;Access&quot;| SW1\n    SW1 ===|&quot;Trunk&lt;br/&gt;VLAN 10, 20, 99&quot;| SW2[&quot;🔲 Switch 2&quot;]\n    SW2 ---|&quot;Access&quot;| PC3[&quot;💻 PC&lt;br/&gt;VLAN 10&quot;]\n    SW2 ---|&quot;Access&quot;| PC4[&quot;💻 PC&lt;br/&gt;VLAN 20&quot;]\n    style SW1 fill:#fff9c4,stroke:#f9a825\n    style SW2 fill:#fff9c4,stroke:#f9a825\"><svg id=\"exp-1776625949356-7-0\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" class=\"flowchart\" style=\"max-width: 883.1484375px;\" viewBox=\"0 0 883.1484375 210\" role=\"graphics-document document\" aria-roledescription=\"flowchart-v2\"><style>#exp-1776625949356-7-0{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#exp-1776625949356-7-0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#exp-1776625949356-7-0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#exp-1776625949356-7-0 .error-icon{fill:#552222;}#exp-1776625949356-7-0 .error-text{fill:#552222;stroke:#552222;}#exp-1776625949356-7-0 .edge-thickness-normal{stroke-width:1px;}#exp-1776625949356-7-0 .edge-thickness-thick{stroke-width:3.5px;}#exp-1776625949356-7-0 .edge-pattern-solid{stroke-dasharray:0;}#exp-1776625949356-7-0 .edge-thickness-invisible{stroke-width:0;fill:none;}#exp-1776625949356-7-0 .edge-pattern-dashed{stroke-dasharray:3;}#exp-1776625949356-7-0 .edge-pattern-dotted{stroke-dasharray:2;}#exp-1776625949356-7-0 .marker{fill:#333333;stroke:#333333;}#exp-1776625949356-7-0 .marker.cross{stroke:#333333;}#exp-1776625949356-7-0 svg{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;}#exp-1776625949356-7-0 p{margin:0;}#exp-1776625949356-7-0 .label{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;color:#333;}#exp-1776625949356-7-0 .cluster-label text{fill:#333;}#exp-1776625949356-7-0 .cluster-label span{color:#333;}#exp-1776625949356-7-0 .cluster-label span p{background-color:transparent;}#exp-1776625949356-7-0 .label text,#exp-1776625949356-7-0 span{fill:#333;color:#333;}#exp-1776625949356-7-0 .node rect,#exp-1776625949356-7-0 .node circle,#exp-1776625949356-7-0 .node ellipse,#exp-1776625949356-7-0 .node polygon,#exp-1776625949356-7-0 .node path{fill:#ECECFF;stroke:#667eea;stroke-width:1px;}#exp-1776625949356-7-0 .rough-node .label text,#exp-1776625949356-7-0 .node .label text,#exp-1776625949356-7-0 .image-shape .label,#exp-1776625949356-7-0 .icon-shape .label{text-anchor:middle;}#exp-1776625949356-7-0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#exp-1776625949356-7-0 .rough-node .label,#exp-1776625949356-7-0 .node .label,#exp-1776625949356-7-0 .image-shape .label,#exp-1776625949356-7-0 .icon-shape .label{text-align:center;}#exp-1776625949356-7-0 .node.clickable{cursor:pointer;}#exp-1776625949356-7-0 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#exp-1776625949356-7-0 .arrowheadPath{fill:#333333;}#exp-1776625949356-7-0 .edgePath .path{stroke:#333333;stroke-width:1px;}#exp-1776625949356-7-0 .flowchart-link{stroke:#333333;fill:none;}#exp-1776625949356-7-0 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1776625949356-7-0 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#exp-1776625949356-7-0 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1776625949356-7-0 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#exp-1776625949356-7-0 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#exp-1776625949356-7-0 .cluster text{fill:#333;}#exp-1776625949356-7-0 .cluster span{color:#333;}#exp-1776625949356-7-0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#exp-1776625949356-7-0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#exp-1776625949356-7-0 rect.text{fill:none;stroke-width:0;}#exp-1776625949356-7-0 .icon-shape,#exp-1776625949356-7-0 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1776625949356-7-0 .icon-shape p,#exp-1776625949356-7-0 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#exp-1776625949356-7-0 .icon-shape .label rect,#exp-1776625949356-7-0 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1776625949356-7-0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#exp-1776625949356-7-0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#exp-1776625949356-7-0 .node .neo-node{stroke:#667eea;}#exp-1776625949356-7-0 [data-look=\"neo\"].node rect,#exp-1776625949356-7-0 [data-look=\"neo\"].cluster rect,#exp-1776625949356-7-0 [data-look=\"neo\"].node polygon{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949356-7-0 [data-look=\"neo\"].node path{stroke:#667eea;stroke-width:1px;}#exp-1776625949356-7-0 [data-look=\"neo\"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949356-7-0 [data-look=\"neo\"].node .neo-line path{stroke:#667eea;filter:none;}#exp-1776625949356-7-0 [data-look=\"neo\"].node circle{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949356-7-0 [data-look=\"neo\"].node circle .state-start{fill:#000000;}#exp-1776625949356-7-0 [data-look=\"neo\"].icon-shape .icon{fill:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949356-7-0 [data-look=\"neo\"].icon-shape .icon-neo path{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949356-7-0 :root{--mermaid-font-family:\"trebuchet ms\",verdana,arial,sans-serif;}</style><g><marker id=\"exp-1776625949356-7-0_flowchart-v2-pointEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 0 L 10 5 L 0 10 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949356-7-0_flowchart-v2-pointStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"4.5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 5 L 10 10 L 10 0 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949356-7-0_flowchart-v2-pointEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"11.5\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"10.5\" markerHeight=\"14\" orient=\"auto\"><path d=\"M 0 0 L 11.5 7 L 0 14 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949356-7-0_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></polygon></marker><marker id=\"exp-1776625949356-7-0_flowchart-v2-circleEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"11\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1776625949356-7-0_flowchart-v2-circleStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-1\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1776625949356-7-0_flowchart-v2-circleEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refY=\"5\" refX=\"12.25\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1776625949356-7-0_flowchart-v2-circleStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-2\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1776625949356-7-0_flowchart-v2-crossEnd\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"12\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949356-7-0_flowchart-v2-crossStart\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"-1\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949356-7-0_flowchart-v2-crossEnd-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"17.7\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5;\"></path></marker><marker id=\"exp-1776625949356-7-0_flowchart-v2-crossStart-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"-3.5\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5; stroke-dasharray: 1, 0;\"></path></marker><g class=\"root\"><g class=\"clusters\"></g><g class=\"edgePaths\"><path d=\"M119.453,44L128.479,44C137.505,44,155.557,44,176.426,50.167C197.294,56.333,220.979,68.667,232.822,74.833L244.664,81\" id=\"exp-1776625949356-7-0-L_PC1_SW1_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_PC1_SW1_0\" data-points=\"W3sieCI6MTE5LjQ1MzEyNSwieSI6NDR9LHsieCI6MTczLjYwOTM3NSwieSI6NDR9LHsieCI6MjQ0LjY2NDI1NDYxMDY1NTc1LCJ5Ijo4MX1d\" data-look=\"classic\"></path><path d=\"M120.57,166L129.41,166C138.25,166,155.93,166,176.612,159.833C197.294,153.667,220.979,141.333,232.822,135.167L244.664,129\" id=\"exp-1776625949356-7-0-L_PC2_SW1_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_PC2_SW1_0\" data-points=\"W3sieCI6MTIwLjU3MDMxMjUsInkiOjE2Nn0seyJ4IjoxNzMuNjA5Mzc1LCJ5IjoxNjZ9LHsieCI6MjQ0LjY2NDI1NDYxMDY1NTc1LCJ5IjoxMjl9XQ==\" data-look=\"classic\"></path><path d=\"M354.859,105L369.126,105C383.392,105,411.924,105,440.457,105C468.99,105,497.522,105,511.788,105L526.055,105\" id=\"exp-1776625949356-7-0-L_SW1_SW2_0\" class=\" edge-thickness-thick edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_SW1_SW2_0\" data-points=\"W3sieCI6MzU0Ljg1OTM3NSwieSI6MTA1fSx7IngiOjQ0MC40NTcwMzEyNSwieSI6MTA1fSx7IngiOjUyNi4wNTQ2ODc1LCJ5IjoxMDV9XQ==\" data-look=\"classic\"></path><path d=\"M637.807,81L649.762,74.833C661.717,68.667,685.628,56.333,706.61,50.167C727.591,44,745.643,44,754.669,44L763.695,44\" id=\"exp-1776625949356-7-0-L_SW2_PC3_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_SW2_PC3_0\" data-points=\"W3sieCI6NjM3LjgwNjU0NDU2OTY3MjIsInkiOjgxfSx7IngiOjcwOS41MzkwNjI1LCJ5Ijo0NH0seyJ4Ijo3NjMuNjk1MzEyNSwieSI6NDR9XQ==\" data-look=\"classic\"></path><path d=\"M637.807,129L649.762,135.167C661.717,141.333,685.628,153.667,706.423,159.833C727.219,166,744.898,166,753.738,166L762.578,166\" id=\"exp-1776625949356-7-0-L_SW2_PC4_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_SW2_PC4_0\" data-points=\"W3sieCI6NjM3LjgwNjU0NDU2OTY3MjIsInkiOjEyOX0seyJ4Ijo3MDkuNTM5MDYyNSwieSI6MTY2fSx7IngiOjc2Mi41NzgxMjUsInkiOjE2Nn1d\" data-look=\"classic\"></path></g><g class=\"edgeLabels\"><g class=\"edgeLabel\" transform=\"translate(173.609375, 44)\"><g class=\"label\" data-id=\"L_PC1_SW1_0\" transform=\"translate(0, -10)\"><g><rect class=\"background\" style=\"\" x=\"-28.0390625\" y=\"-1.5\" width=\"56.078125\" height=\"23\"></rect><text y=\"-10.1\" text-anchor=\"middle\" style=\"\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"><tspan font-style=\"normal\" class=\"text-inner-tspan\" font-weight=\"normal\">Access</tspan></tspan></text></g></g></g><g class=\"edgeLabel\" transform=\"translate(173.609375, 166)\"><g class=\"label\" data-id=\"L_PC2_SW1_0\" transform=\"translate(0, -10)\"><g><rect class=\"background\" style=\"\" x=\"-28.0390625\" y=\"-1.5\" width=\"56.078125\" height=\"23\"></rect><text y=\"-10.1\" text-anchor=\"middle\" style=\"\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"><tspan font-style=\"normal\" class=\"text-inner-tspan\" font-weight=\"normal\">Access</tspan></tspan></text></g></g></g><g class=\"edgeLabel\" transform=\"translate(440.45703125, 105)\"><g class=\"label\" data-id=\"L_SW1_SW2_0\" transform=\"translate(0, -18.799999237060547)\"><g><rect class=\"background\" style=\"\" x=\"-60.59765625\" y=\"-1.5\" width=\"121.1953125\" height=\"40.599998474121094\"></rect><text y=\"-10.1\" text-anchor=\"middle\" style=\"\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"><tspan font-style=\"normal\" class=\"text-inner-tspan\" font-weight=\"normal\">Trunk</tspan></tspan><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"1em\" dy=\"1.1em\" text-anchor=\"middle\"><tspan font-style=\"normal\" class=\"text-inner-tspan\" font-weight=\"normal\">VLAN</tspan><tspan font-style=\"normal\" class=\"text-inner-tspan\" font-weight=\"normal\"> 10,</tspan><tspan font-style=\"normal\" class=\"text-inner-tspan\" font-weight=\"normal\"> 20,</tspan><tspan font-style=\"normal\" class=\"text-inner-tspan\" font-weight=\"normal\"> 99</tspan></tspan></text></g></g></g><g class=\"edgeLabel\" transform=\"translate(709.5390625, 44)\"><g class=\"label\" data-id=\"L_SW2_PC3_0\" transform=\"translate(0, -10)\"><g><rect class=\"background\" style=\"\" x=\"-28.0390625\" y=\"-1.5\" width=\"56.078125\" height=\"23\"></rect><text y=\"-10.1\" text-anchor=\"middle\" style=\"\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"><tspan font-style=\"normal\" class=\"text-inner-tspan\" font-weight=\"normal\">Access</tspan></tspan></text></g></g></g><g class=\"edgeLabel\" transform=\"translate(709.5390625, 166)\"><g class=\"label\" data-id=\"L_SW2_PC4_0\" transform=\"translate(0, -10)\"><g><rect class=\"background\" style=\"\" x=\"-28.0390625\" y=\"-1.5\" width=\"56.078125\" height=\"23\"></rect><text y=\"-10.1\" text-anchor=\"middle\" style=\"\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"><tspan font-style=\"normal\" class=\"text-inner-tspan\" font-weight=\"normal\">Access</tspan></tspan></text></g></g></g></g><g class=\"nodes\"><g class=\"node default  \" id=\"exp-1776625949356-7-0-flowchart-PC1-0\" data-look=\"classic\" transform=\"translate(64.28515625, 44)\"><rect class=\"basic label-container\" style=\"\" x=\"-55.16796875\" y=\"-36\" width=\"110.3359375\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-31.16796875, -24)\"><rect></rect><foreignObject width=\"62.3359375\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>💻 PC<br>VLAN 10</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949356-7-0-flowchart-SW1-1\" data-look=\"classic\" transform=\"translate(290.75390625, 105)\"><rect class=\"basic label-container\" style=\"fill:#fff9c4 !important;stroke:#f9a825 !important\" x=\"-64.10546875\" y=\"-24\" width=\"128.2109375\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-40.10546875, -12)\"><rect></rect><foreignObject width=\"80.2109375\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>🔲 Switch 1</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949356-7-0-flowchart-PC2-2\" data-look=\"classic\" transform=\"translate(64.28515625, 166)\"><rect class=\"basic label-container\" style=\"\" x=\"-56.28515625\" y=\"-36\" width=\"112.5703125\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-32.28515625, -24)\"><rect></rect><foreignObject width=\"64.5703125\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>💻 PC<br>VLAN 20</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949356-7-0-flowchart-SW2-5\" data-look=\"classic\" transform=\"translate(591.27734375, 105)\"><rect class=\"basic label-container\" style=\"fill:#fff9c4 !important;stroke:#f9a825 !important\" x=\"-65.22265625\" y=\"-24\" width=\"130.4453125\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-41.22265625, -12)\"><rect></rect><foreignObject width=\"82.4453125\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>🔲 Switch 2</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949356-7-0-flowchart-PC3-7\" data-look=\"classic\" transform=\"translate(818.86328125, 44)\"><rect class=\"basic label-container\" style=\"\" x=\"-55.16796875\" y=\"-36\" width=\"110.3359375\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-31.16796875, -24)\"><rect></rect><foreignObject width=\"62.3359375\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>💻 PC<br>VLAN 10</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949356-7-0-flowchart-PC4-9\" data-look=\"classic\" transform=\"translate(818.86328125, 166)\"><rect class=\"basic label-container\" style=\"\" x=\"-56.28515625\" y=\"-36\" width=\"112.5703125\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-32.28515625, -24)\"><rect></rect><foreignObject width=\"64.5703125\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>💻 PC<br>VLAN 20</p></span></div></foreignObject></g></g></g></g></g><defs><filter id=\"exp-1776625949356-7-0-drop-shadow\" height=\"130%\" width=\"130%\"><feDropShadow dx=\"4\" dy=\"4\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs><defs><filter id=\"exp-1776625949356-7-0-drop-shadow-small\" height=\"150%\" width=\"150%\"><feDropShadow dx=\"2\" dy=\"2\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs></svg></div>\n","<h1>🌉 Native VLAN та управління</h1>\n<p><strong>Головна ідея:</strong> Native VLAN — це VLAN, трафік якого передається через trunk-порт <strong>без тегу</strong>. За замовчуванням на обладнанні Cisco це VLAN 1.</p>\n<h2>⚙️ Навіщо потрібен Native VLAN</h2>\n<ul>\n<li>🔄 Сумісність із пристроями, які не підтримують 802.1Q (нетегований трафік)</li>\n<li>📨 Якщо на trunk-порт надходить нетегований кадр — його відносять саме до native VLAN</li>\n<li>🔧 Забезпечення взаємодії зі старим або спрощеним обладнанням</li>\n</ul>\n<h2>🛡️ Management VLAN</h2>\n<div class=\"info\"><strong>ℹ️ Визначення</strong> <p><strong>Management VLAN</strong> — окремий VLAN, який використовується для віддаленого адміністрування комутаторів (SSH, Telnet, SNMP).</p>\n</div>\n\n\n\n<p><strong>Рекомендації з безпеки:</strong></p>\n<ul>\n<li>🚫 Не використовувати VLAN 1 як management</li>\n<li>🚫 Не використовувати VLAN 1 як native</li>\n<li>✅ Виділити окремий VLAN (наприклад, VLAN 99) для управління</li>\n<li>✅ Обмежити доступ до management VLAN</li>\n</ul>\n<div class=\"warning\"><strong>⚠️ Застереження</strong> <p>Native VLAN має збігатися на обох кінцях trunk-з'єднання. Якщо на одному порту native VLAN 1, а на іншому — VLAN 99, виникає невідповідність, про яку повідомить протокол CDP (<code>native VLAN mismatch</code>).</p>\n</div>\n\n","<h1>⚙️ Створення VLAN на комутаторі</h1>\n<p><strong>Головна ідея:</strong> Налаштування VLAN у Cisco IOS виконується в кілька простих кроків через режим глобальної конфігурації.</p>\n<h2>📝 Створення VLAN</h2>\n<pre><code class=\"language-cisco\">Switch&gt; enable\nSwitch# configure terminal\nSwitch(config)# vlan 10\nSwitch(config-vlan)# name Sales\nSwitch(config-vlan)# exit\n\nSwitch(config)# vlan 20\nSwitch(config-vlan)# name Engineering\nSwitch(config-vlan)# exit</code></pre><h2>🔌 Призначення access-порту до VLAN</h2>\n<pre><code class=\"language-cisco\">Switch(config)# interface fa0/5\nSwitch(config-if)# switchport mode access\nSwitch(config-if)# switchport access vlan 10\nSwitch(config-if)# no shutdown</code></pre><h2>📦 Налаштування діапазону портів одразу</h2>\n<pre><code class=\"language-cisco\">Switch(config)# interface range fa0/6-10\nSwitch(config-if-range)# switchport mode access\nSwitch(config-if-range)# switchport access vlan 30</code></pre><div class=\"tip\"><strong>💡 Економія часу</strong> <p>Команда <code>interface range</code> дозволяє налаштовувати кілька портів одночасно — це зручно, коли до одного VLAN належить група портів.</p>\n</div>\n\n","<h1>🛣️ Налаштування trunk-порту</h1>\n<p><strong>Головна ідея:</strong> Trunk-порт вимагає явного переведення в режим магістралі та (за потреби) задання native VLAN.</p>\n<h2>📝 Базове налаштування trunk</h2>\n<pre><code class=\"language-cisco\">Switch(config)# interface fa0/1\nSwitch(config-if)# switchport mode trunk\nSwitch(config-if)# switchport trunk native vlan 99\nSwitch(config-if)# no shutdown</code></pre><h2>🎚️ Обмеження VLAN на trunk</h2>\n<p>За замовчуванням trunk передає трафік усіх VLAN. Для безпеки та оптимізації можна явно вказати список:</p>\n<pre><code class=\"language-cisco\">Switch(config-if)# switchport trunk allowed vlan 10,20,30,99</code></pre><h2>🔍 Перегляд статусу trunk</h2>\n<pre><code class=\"language-cisco\">Switch# show interfaces trunk\n\nPort      Mode         Encapsulation  Status        Native vlan\nFa0/1     on           802.1q         trunking      99\n\nPort      Vlans allowed on trunk\nFa0/1     1-4094</code></pre>","<h1>🌐 IP-адреса для управління</h1>\n<p><strong>Головна ідея:</strong> Комутатор 2-го рівня сам по собі не має IP-адреси на фізичних портах. IP-адреса призначається <strong>віртуальному інтерфейсу VLAN (SVI)</strong> для віддаленого управління.</p>\n<h2>📝 Створення SVI</h2>\n<pre><code class=\"language-cisco\">Switch(config)# interface vlan 99\nSwitch(config-if)# ip address 192.168.99.11 255.255.255.0\nSwitch(config-if)# no shutdown\nSwitch(config)# ip default-gateway 192.168.99.1</code></pre><div class=\"info\"><strong>ℹ️ SVI</strong> <p><strong>SVI</strong> (Switched Virtual Interface) — логічний інтерфейс, що представляє VLAN на самому комутаторі. Саме через нього здійснюється віддалене керування.</p>\n</div>\n\n\n\n<h2>✅ Переваги підходу</h2>\n<ul>\n<li>Доступ до комутатора з будь-якого порту management VLAN</li>\n<li>Незалежність від конкретного фізичного порту</li>\n<li>Можливість віддаленого налаштування через SSH/Telnet</li>\n<li>Централізоване управління</li>\n</ul>\n","<h1>🔍 Перевірка налаштувань VLAN</h1>\n<p><strong>Головна ідея:</strong> Cisco IOS надає кілька команд для перевірки коректності налаштування VLAN.</p>\n<h2>📋 Основні команди діагностики</h2>\n<table>\n<thead>\n<tr>\n<th>Команда</th>\n<th>Що показує</th>\n</tr>\n</thead>\n<tbody><tr>\n<td><code>show vlan brief</code></td>\n<td>Стислий перелік VLAN та їхніх портів</td>\n</tr>\n<tr>\n<td><code>show vlan id &lt;номер&gt;</code></td>\n<td>Детальна інформація про конкретний VLAN</td>\n</tr>\n<tr>\n<td><code>show interfaces trunk</code></td>\n<td>Статус trunk-портів та дозволених VLAN</td>\n</tr>\n<tr>\n<td><code>show interfaces switchport</code></td>\n<td>Режим порту та належність до VLAN</td>\n</tr>\n<tr>\n<td><code>show running-config</code></td>\n<td>Поточна конфігурація пристрою</td>\n</tr>\n</tbody></table>\n<h2>📊 Приклад виводу <code>show vlan brief</code></h2>\n<pre><code class=\"language-plaintext hljs\" data-highlighted=\"yes\">VLAN Name          Status    Ports\n---- ------------- --------- -------------------------------\n1    default       active    Fa0/2, Fa0/3, Fa0/4\n10   Green         active    Fa0/11, Fa0/12, Fa0/13\n20   Amber         active    Fa0/18, Fa0/19\n30   Red           active    Fa0/6, Fa0/7\n99   management    active</code></pre><div class=\"tip\"><strong>💡 Корисна звичка</strong> <p>Після кожного етапу налаштування VLAN виконуйте <code>show vlan brief</code> — це швидкий спосіб переконатися, що порти опинилися у правильних VLAN.</p>\n</div>\n\n","<h1>🔗 Маршрутизація між VLAN</h1>\n<div class=\"warning\"><strong>⚠️ Ключовий факт</strong> <p>Пристрої в різних VLAN <strong>не можуть</strong> обмінюватися даними лише засобами комутатора 2-го рівня. Потрібен пристрій 3-го рівня — <strong>маршрутизатор</strong> або <strong>комутатор 3-го рівня</strong>.</p>\n</div>\n\n\n\n<p><strong>Головна ідея:</strong> Для зв'язку між VLAN використовують три основні підходи.</p>\n<h2>🛠️ Варіанти реалізації</h2>\n\n<div class=\"mermaid\" data-source=\"graph TD\n    START[&quot;🔗 Inter-VLAN&lt;br/&gt;Routing&quot;] --&gt; M1[&quot;1️⃣ Класичний&lt;br/&gt;(Legacy)&quot;]\n    START --&gt; M2[&quot;2️⃣ Router-on-a-Stick&quot;]\n    START --&gt; M3[&quot;3️⃣ L3 Switch&lt;br/&gt;(SVI)&quot;]\n    M1 --&gt; D1[&quot;Окремий фізичний&lt;br/&gt;інтерфейс&lt;br/&gt;на кожен VLAN&quot;]\n    M2 --&gt; D2[&quot;Один інтерфейс +&lt;br/&gt;підінтерфейси&lt;br/&gt;з тегами&quot;]\n    M3 --&gt; D3[&quot;Віртуальні інтерфейси&lt;br/&gt;VLAN на комутаторі&lt;br/&gt;рівня 3&quot;]\n    style START fill:#fff9c4,stroke:#f9a825\n    style M1 fill:#fce4ec,stroke:#c2185b\n    style M2 fill:#e3f2fd,stroke:#1565c0\n    style M3 fill:#e8f5e9,stroke:#388e3c\"><svg id=\"exp-1776625949371-13-0\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" class=\"flowchart\" style=\"max-width: 708.5234375px;\" viewBox=\"0 0 708.5234375 356\" role=\"graphics-document document\" aria-roledescription=\"flowchart-v2\"><style>#exp-1776625949371-13-0{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#exp-1776625949371-13-0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#exp-1776625949371-13-0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#exp-1776625949371-13-0 .error-icon{fill:#552222;}#exp-1776625949371-13-0 .error-text{fill:#552222;stroke:#552222;}#exp-1776625949371-13-0 .edge-thickness-normal{stroke-width:1px;}#exp-1776625949371-13-0 .edge-thickness-thick{stroke-width:3.5px;}#exp-1776625949371-13-0 .edge-pattern-solid{stroke-dasharray:0;}#exp-1776625949371-13-0 .edge-thickness-invisible{stroke-width:0;fill:none;}#exp-1776625949371-13-0 .edge-pattern-dashed{stroke-dasharray:3;}#exp-1776625949371-13-0 .edge-pattern-dotted{stroke-dasharray:2;}#exp-1776625949371-13-0 .marker{fill:#333333;stroke:#333333;}#exp-1776625949371-13-0 .marker.cross{stroke:#333333;}#exp-1776625949371-13-0 svg{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;}#exp-1776625949371-13-0 p{margin:0;}#exp-1776625949371-13-0 .label{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;color:#333;}#exp-1776625949371-13-0 .cluster-label text{fill:#333;}#exp-1776625949371-13-0 .cluster-label span{color:#333;}#exp-1776625949371-13-0 .cluster-label span p{background-color:transparent;}#exp-1776625949371-13-0 .label text,#exp-1776625949371-13-0 span{fill:#333;color:#333;}#exp-1776625949371-13-0 .node rect,#exp-1776625949371-13-0 .node circle,#exp-1776625949371-13-0 .node ellipse,#exp-1776625949371-13-0 .node polygon,#exp-1776625949371-13-0 .node path{fill:#ECECFF;stroke:#667eea;stroke-width:1px;}#exp-1776625949371-13-0 .rough-node .label text,#exp-1776625949371-13-0 .node .label text,#exp-1776625949371-13-0 .image-shape .label,#exp-1776625949371-13-0 .icon-shape .label{text-anchor:middle;}#exp-1776625949371-13-0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#exp-1776625949371-13-0 .rough-node .label,#exp-1776625949371-13-0 .node .label,#exp-1776625949371-13-0 .image-shape .label,#exp-1776625949371-13-0 .icon-shape .label{text-align:center;}#exp-1776625949371-13-0 .node.clickable{cursor:pointer;}#exp-1776625949371-13-0 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#exp-1776625949371-13-0 .arrowheadPath{fill:#333333;}#exp-1776625949371-13-0 .edgePath .path{stroke:#333333;stroke-width:1px;}#exp-1776625949371-13-0 .flowchart-link{stroke:#333333;fill:none;}#exp-1776625949371-13-0 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1776625949371-13-0 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#exp-1776625949371-13-0 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1776625949371-13-0 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#exp-1776625949371-13-0 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#exp-1776625949371-13-0 .cluster text{fill:#333;}#exp-1776625949371-13-0 .cluster span{color:#333;}#exp-1776625949371-13-0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#exp-1776625949371-13-0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#exp-1776625949371-13-0 rect.text{fill:none;stroke-width:0;}#exp-1776625949371-13-0 .icon-shape,#exp-1776625949371-13-0 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1776625949371-13-0 .icon-shape p,#exp-1776625949371-13-0 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#exp-1776625949371-13-0 .icon-shape .label rect,#exp-1776625949371-13-0 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1776625949371-13-0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#exp-1776625949371-13-0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#exp-1776625949371-13-0 .node .neo-node{stroke:#667eea;}#exp-1776625949371-13-0 [data-look=\"neo\"].node rect,#exp-1776625949371-13-0 [data-look=\"neo\"].cluster rect,#exp-1776625949371-13-0 [data-look=\"neo\"].node polygon{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949371-13-0 [data-look=\"neo\"].node path{stroke:#667eea;stroke-width:1px;}#exp-1776625949371-13-0 [data-look=\"neo\"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949371-13-0 [data-look=\"neo\"].node .neo-line path{stroke:#667eea;filter:none;}#exp-1776625949371-13-0 [data-look=\"neo\"].node circle{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949371-13-0 [data-look=\"neo\"].node circle .state-start{fill:#000000;}#exp-1776625949371-13-0 [data-look=\"neo\"].icon-shape .icon{fill:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949371-13-0 [data-look=\"neo\"].icon-shape .icon-neo path{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1776625949371-13-0 :root{--mermaid-font-family:\"trebuchet ms\",verdana,arial,sans-serif;}</style><g><marker id=\"exp-1776625949371-13-0_flowchart-v2-pointEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 0 L 10 5 L 0 10 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949371-13-0_flowchart-v2-pointStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"4.5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 5 L 10 10 L 10 0 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949371-13-0_flowchart-v2-pointEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"11.5\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"10.5\" markerHeight=\"14\" orient=\"auto\"><path d=\"M 0 0 L 11.5 7 L 0 14 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949371-13-0_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></polygon></marker><marker id=\"exp-1776625949371-13-0_flowchart-v2-circleEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"11\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1776625949371-13-0_flowchart-v2-circleStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-1\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1776625949371-13-0_flowchart-v2-circleEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refY=\"5\" refX=\"12.25\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1776625949371-13-0_flowchart-v2-circleStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-2\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1776625949371-13-0_flowchart-v2-crossEnd\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"12\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949371-13-0_flowchart-v2-crossStart\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"-1\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1776625949371-13-0_flowchart-v2-crossEnd-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"17.7\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5;\"></path></marker><marker id=\"exp-1776625949371-13-0_flowchart-v2-crossStart-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"-3.5\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5; stroke-dasharray: 1, 0;\"></path></marker><g class=\"root\"><g class=\"clusters\"></g><g class=\"edgePaths\"><path d=\"M267.266,63.025L240.003,70.02C212.741,77.016,158.216,91.008,130.954,101.504C103.691,112,103.691,119,103.691,122.5L103.691,126\" id=\"exp-1776625949371-13-0-L_START_M1_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_START_M1_0\" data-points=\"W3sieCI6MjY3LjI2NTYyNSwieSI6NjMuMDI0NTM0MTMwODcwNjA2fSx7IngiOjEwMy42OTE0MDYyNSwieSI6MTA1fSx7IngiOjEwMy42OTE0MDYyNSwieSI6MTMwfV0=\" data-look=\"classic\" marker-end=\"url(#exp-1776625949371-13-0_flowchart-v2-pointEnd)\"></path><path d=\"M341.402,80L341.402,84.167C341.402,88.333,341.402,96.667,341.402,106.333C341.402,116,341.402,127,341.402,132.5L341.402,138\" id=\"exp-1776625949371-13-0-L_START_M2_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_START_M2_0\" data-points=\"W3sieCI6MzQxLjQwMjM0Mzc1LCJ5Ijo4MH0seyJ4IjozNDEuNDAyMzQzNzUsInkiOjEwNX0seyJ4IjozNDEuNDAyMzQzNzUsInkiOjE0Mn1d\" data-look=\"classic\" marker-end=\"url(#exp-1776625949371-13-0_flowchart-v2-pointEnd)\"></path><path d=\"M415.539,62.048L444.945,69.207C474.35,76.365,533.161,90.683,562.567,101.341C591.973,112,591.973,119,591.973,122.5L591.973,126\" id=\"exp-1776625949371-13-0-L_START_M3_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_START_M3_0\" data-points=\"W3sieCI6NDE1LjUzOTA2MjUsInkiOjYyLjA0ODE4Njk0ODUyMzY4fSx7IngiOjU5MS45NzI2NTYyNSwieSI6MTA1fSx7IngiOjU5MS45NzI2NTYyNSwieSI6MTMwfV0=\" data-look=\"classic\" marker-end=\"url(#exp-1776625949371-13-0_flowchart-v2-pointEnd)\"></path><path d=\"M103.691,202L103.691,206.167C103.691,210.333,103.691,218.667,103.691,226.333C103.691,234,103.691,241,103.691,244.5L103.691,248\" id=\"exp-1776625949371-13-0-L_M1_D1_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_M1_D1_0\" data-points=\"W3sieCI6MTAzLjY5MTQwNjI1LCJ5IjoyMDJ9LHsieCI6MTAzLjY5MTQwNjI1LCJ5IjoyMjd9LHsieCI6MTAzLjY5MTQwNjI1LCJ5IjoyNTJ9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1776625949371-13-0_flowchart-v2-pointEnd)\"></path><path d=\"M341.402,190L341.402,196.167C341.402,202.333,341.402,214.667,341.402,224.333C341.402,234,341.402,241,341.402,244.5L341.402,248\" id=\"exp-1776625949371-13-0-L_M2_D2_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_M2_D2_0\" data-points=\"W3sieCI6MzQxLjQwMjM0Mzc1LCJ5IjoxOTB9LHsieCI6MzQxLjQwMjM0Mzc1LCJ5IjoyMjd9LHsieCI6MzQxLjQwMjM0Mzc1LCJ5IjoyNTJ9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1776625949371-13-0_flowchart-v2-pointEnd)\"></path><path d=\"M591.973,202L591.973,206.167C591.973,210.333,591.973,218.667,591.973,226.333C591.973,234,591.973,241,591.973,244.5L591.973,248\" id=\"exp-1776625949371-13-0-L_M3_D3_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_M3_D3_0\" data-points=\"W3sieCI6NTkxLjk3MjY1NjI1LCJ5IjoyMDJ9LHsieCI6NTkxLjk3MjY1NjI1LCJ5IjoyMjd9LHsieCI6NTkxLjk3MjY1NjI1LCJ5IjoyNTJ9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1776625949371-13-0_flowchart-v2-pointEnd)\"></path></g><g class=\"edgeLabels\"><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_START_M1_0\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_START_M2_0\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_START_M3_0\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_M1_D1_0\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_M2_D2_0\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_M3_D3_0\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g></g><g class=\"nodes\"><g class=\"node default  \" id=\"exp-1776625949371-13-0-flowchart-START-0\" data-look=\"classic\" transform=\"translate(341.40234375, 44)\"><rect class=\"basic label-container\" style=\"fill:#fff9c4 !important;stroke:#f9a825 !important\" x=\"-74.13671875\" y=\"-36\" width=\"148.2734375\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-50.13671875, -24)\"><rect></rect><foreignObject width=\"100.2734375\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>🔗 Inter-VLAN<br>Routing</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949371-13-0-flowchart-M1-1\" data-look=\"classic\" transform=\"translate(103.69140625, 166)\"><rect class=\"basic label-container\" style=\"fill:#fce4ec !important;stroke:#c2185b !important\" x=\"-75.3984375\" y=\"-36\" width=\"150.796875\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-51.3984375, -24)\"><rect></rect><foreignObject width=\"102.796875\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>1️⃣ Класичний<br>(Legacy)</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949371-13-0-flowchart-M2-3\" data-look=\"classic\" transform=\"translate(341.40234375, 166)\"><rect class=\"basic label-container\" style=\"fill:#e3f2fd !important;stroke:#1565c0 !important\" x=\"-100.0234375\" y=\"-24\" width=\"200.046875\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-76.0234375, -12)\"><rect></rect><foreignObject width=\"152.046875\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>2️⃣ Router-on-a-Stick</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949371-13-0-flowchart-M3-5\" data-look=\"classic\" transform=\"translate(591.97265625, 166)\"><rect class=\"basic label-container\" style=\"fill:#e8f5e9 !important;stroke:#388e3c !important\" x=\"-69.796875\" y=\"-36\" width=\"139.59375\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-45.796875, -24)\"><rect></rect><foreignObject width=\"91.59375\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>3️⃣ L3 Switch<br>(SVI)</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949371-13-0-flowchart-D1-7\" data-look=\"classic\" transform=\"translate(103.69140625, 300)\"><rect class=\"basic label-container\" style=\"\" x=\"-95.69140625\" y=\"-48\" width=\"191.3828125\" height=\"96\"></rect><g class=\"label\" style=\"\" transform=\"translate(-71.69140625, -36)\"><rect></rect><foreignObject width=\"143.3828125\" height=\"72\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>Окремий фізичний<br>інтерфейс<br>на кожен VLAN</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949371-13-0-flowchart-D2-9\" data-look=\"classic\" transform=\"translate(341.40234375, 300)\"><rect class=\"basic label-container\" style=\"\" x=\"-92.01953125\" y=\"-48\" width=\"184.0390625\" height=\"96\"></rect><g class=\"label\" style=\"\" transform=\"translate(-68.01953125, -36)\"><rect></rect><foreignObject width=\"136.0390625\" height=\"72\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>Один інтерфейс +<br>підінтерфейси<br>з тегами</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1776625949371-13-0-flowchart-D3-11\" data-look=\"classic\" transform=\"translate(591.97265625, 300)\"><rect class=\"basic label-container\" style=\"\" x=\"-108.55078125\" y=\"-48\" width=\"217.1015625\" height=\"96\"></rect><g class=\"label\" style=\"\" transform=\"translate(-84.55078125, -36)\"><rect></rect><foreignObject width=\"169.1015625\" height=\"72\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>Віртуальні інтерфейси<br>VLAN на комутаторі<br>рівня 3</p></span></div></foreignObject></g></g></g></g></g><defs><filter id=\"exp-1776625949371-13-0-drop-shadow\" height=\"130%\" width=\"130%\"><feDropShadow dx=\"4\" dy=\"4\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs><defs><filter id=\"exp-1776625949371-13-0-drop-shadow-small\" height=\"150%\" width=\"150%\"><feDropShadow dx=\"2\" dy=\"2\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs></svg></div>\n<h2>📊 Порівняння підходів</h2>\n<table>\n<thead>\n<tr>\n<th>Підхід</th>\n<th>Масштабованість</th>\n<th>Продуктивність</th>\n<th>Застосування</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>Legacy</td>\n<td>🔴 Низька</td>\n<td>🟡 Середня</td>\n<td>Історичні мережі</td>\n</tr>\n<tr>\n<td>Router-on-a-Stick</td>\n<td>🟡 Середня</td>\n<td>🟡 Обмежена</td>\n<td>Малі/середні мережі</td>\n</tr>\n<tr>\n<td>L3 Switch</td>\n<td>🟢 Висока</td>\n<td>🟢 Висока</td>\n<td>Корпоративні мережі</td>\n</tr>\n</tbody></table>\n","<h1>✅ Ключові висновки</h1>\n<div class=\"success\"><strong>✅ Підсумок лекції</strong> <p><strong>📌 Що ми дізналися:</strong></p>\n<ol>\n<li><p><strong>VLAN</strong> — логічне розділення мережі на рівні комутаторів, що забезпечує ізоляцію трафіку та гнучкість структури.</p>\n</li>\n<li><p><strong>VLAN ID</strong> (1–4094) унікально ідентифікує кожну віртуальну мережу; значення 0 та 4095 зарезервовані, а VLAN 1 — за замовчуванням.</p>\n</li>\n<li><p><strong>IEEE 802.1Q</strong> — стандарт тегування кадрів, який додає 4-байтовий заголовок з VLAN ID.</p>\n</li>\n<li><p><strong>Access-порти</strong> передають нетегований трафік одного VLAN; <strong>trunk-порти</strong> — тегований трафік кількох VLAN.</p>\n</li>\n<li><p><strong>Native VLAN</strong> — VLAN, трафік якого йде через trunk без тегу. З міркувань безпеки не використовуємо VLAN 1.</p>\n</li>\n<li><p><strong>SVI</strong> (інтерфейс VLAN) забезпечує IP-адресацію комутатора для віддаленого управління.</p>\n</li>\n<li><p><strong>Зв'язок між VLAN</strong> потребує маршрутизатора або комутатора 3-го рівня.</p>\n</li>\n</ol>\n</div>\n\n","<h1>❓ Контрольні питання</h1>\n<ol>\n<li><p>🤔 Що таке VLAN і на якому рівні моделі OSI працює ця технологія?</p>\n</li>\n<li><p>🤔 Які проблеми локальних мереж вирішує впровадження VLAN?</p>\n</li>\n<li><p>🤔 Який діапазон значень може мати VLAN ID? Які значення зарезервовані?</p>\n</li>\n<li><p>🤔 Чим відрізняються access-порт і trunk-порт? Для чого використовується кожен?</p>\n</li>\n<li><p>🤔 Що таке native VLAN і навіщо він потрібен у trunk-з'єднанні?</p>\n</li>\n<li><p>🤔 Якими командами Cisco IOS створюється новий VLAN і призначається порт до нього?</p>\n</li>\n<li><p>🤔 Чому для зв'язку між пристроями різних VLAN потрібен маршрутизатор?</p>\n</li>\n</ol>\n","<h1>📖 Глосарій термінів</h1>\n<table>\n<thead>\n<tr>\n<th>Термін</th>\n<th>English</th>\n<th>Визначення</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>Віртуальна мережа</td>\n<td>Virtual LAN</td>\n<td>Логічна група пристроїв, ізольована на рівні L2</td>\n</tr>\n<tr>\n<td>Широкомовний домен</td>\n<td>Broadcast domain</td>\n<td>Множина пристроїв, що отримують один широкомовний кадр</td>\n</tr>\n<tr>\n<td>Тегування</td>\n<td>Tagging</td>\n<td>Додавання VLAN-мітки до кадру Ethernet</td>\n</tr>\n<tr>\n<td>Порт доступу</td>\n<td>Access port</td>\n<td>Порт, що належить одному VLAN і передає нетегований трафік</td>\n</tr>\n<tr>\n<td>Магістральний порт</td>\n<td>Trunk port</td>\n<td>Порт, що передає тегований трафік кількох VLAN</td>\n</tr>\n<tr>\n<td>Native VLAN</td>\n<td>Native VLAN</td>\n<td>VLAN, трафік якого на trunk-порту передається без тегу</td>\n</tr>\n<tr>\n<td>Маршрутизація між VLAN</td>\n<td>Inter-VLAN routing</td>\n<td>Передача трафіку між різними VLAN через пристрій L3</td>\n</tr>\n</tbody></table>\n","<h1>📖 Глосарій абревіатур</h1>\n<table>\n<thead>\n<tr>\n<th>Абревіатура</th>\n<th>Розшифровка</th>\n<th>Переклад</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>VLAN</td>\n<td>Virtual Local Area Network</td>\n<td>Віртуальна локальна мережа</td>\n</tr>\n<tr>\n<td>LAN</td>\n<td>Local Area Network</td>\n<td>Локальна мережа</td>\n</tr>\n<tr>\n<td>ID</td>\n<td>Identifier</td>\n<td>Ідентифікатор</td>\n</tr>\n<tr>\n<td>OSI</td>\n<td>Open Systems Interconnection</td>\n<td>Взаємодія відкритих систем</td>\n</tr>\n<tr>\n<td>IEEE</td>\n<td>Institute of Electrical &amp; Electronics Engineers</td>\n<td>Інститут інженерів електрики та електроніки</td>\n</tr>\n<tr>\n<td>TPID</td>\n<td>Tag Protocol Identifier</td>\n<td>Ідентифікатор типу протоколу тегу</td>\n</tr>\n<tr>\n<td>TCI</td>\n<td>Tag Control Information</td>\n<td>Контрольна інформація тегу</td>\n</tr>\n<tr>\n<td>PCP</td>\n<td>Priority Code Point</td>\n<td>Поле коду пріоритету</td>\n</tr>\n<tr>\n<td>DEI</td>\n<td>Drop Eligible Indicator</td>\n<td>Індикатор можливості відкидання кадру</td>\n</tr>\n<tr>\n<td>QoS</td>\n<td>Quality of Service</td>\n<td>Якість обслуговування</td>\n</tr>\n<tr>\n<td>SVI</td>\n<td>Switched Virtual Interface</td>\n<td>Віртуальний інтерфейс комутатора</td>\n</tr>\n<tr>\n<td>IOS</td>\n<td>Internetwork Operating System</td>\n<td>Мережева операційна система (Cisco)</td>\n</tr>\n<tr>\n<td>CDP</td>\n<td>Cisco Discovery Protocol</td>\n<td>Протокол виявлення Cisco</td>\n</tr>\n</tbody></table>\n"];let currentSlideIndex=0;
+function renderMath(root){if(typeof renderMathInElement!=="function"||!root)return;try{renderMathInElement(root,{delimiters:[{left:"$$",right:"$$",display:true},{left:"\\[",right:"\\]",display:true},{left:"$",right:"$",display:false},{left:"\\(",right:"\\)",display:false}],throwOnError:false,strict:"ignore",ignoredTags:["script","noscript","style","textarea","pre","code"]});}catch(e){console.warn("Math render error:",e);}}
+function showSlide(i){if(i<0||i>=slides.length)return;currentSlideIndex=i;const el=document.getElementById("current-slide");el.innerHTML=slides[i];el.scrollTop=0;renderMath(el);document.getElementById("progress-bar").style.width=((i+1)/slides.length*100)+"%";document.getElementById("slide-number").textContent=(i+1)+" / "+slides.length;updateSidebarActive();}
+function nextSlide(){if(currentSlideIndex<slides.length-1)showSlide(currentSlideIndex+1);}
+function previousSlide(){if(currentSlideIndex>0)showSlide(currentSlideIndex-1);}
+function toggleSidebar(){document.getElementById("sidebar").classList.toggle("open");}
+function toggleHelp(){document.getElementById("help-overlay").classList.toggle("hidden");}
+function toggleFullscreen(){if(!document.fullscreenElement){const pc=document.getElementById("presentation-container");if(pc.requestFullscreen)pc.requestFullscreen();else if(pc.webkitRequestFullscreen)pc.webkitRequestFullscreen();else if(pc.msRequestFullscreen)pc.msRequestFullscreen();else if(pc.mozRequestFullScreen)pc.mozRequestFullScreen();}else{if(document.exitFullscreen)document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen();else if(document.msExitFullscreen)document.msExitFullscreen();else if(document.mozCancelFullScreen)document.mozCancelFullScreen();}}
+function generateSidebar(){const sc=document.getElementById("sidebar-content");sc.innerHTML="";slides.forEach((html,idx)=>{const t=document.createElement("div");t.className="slide-thumbnail";if(idx===0)t.classList.add("active");const tmp=document.createElement("div");tmp.innerHTML=html;const title=tmp.querySelector("h1,h2");const titleText=title?title.textContent:("Слайд "+(idx+1));const textContent=tmp.textContent.replace(/s+/g," ").trim();const preview=textContent.substring(0,100)+(textContent.length>100?"...":"");t.innerHTML="<div class=\"slide-thumbnail-number\">"+(idx+1)+"</div><div class=\"slide-thumbnail-title\">"+titleText+"</div><div class=\"slide-thumbnail-content\">"+preview+"</div>";t.onclick=()=>{showSlide(idx);if(window.innerWidth<1024)toggleSidebar();};sc.appendChild(t);});}
+function updateSidebarActive(){document.querySelectorAll(".slide-thumbnail").forEach((th,idx)=>{if(idx===currentSlideIndex){th.classList.add("active");th.scrollIntoView({behavior:"smooth",block:"nearest"});}else th.classList.remove("active");});}
+document.addEventListener("keydown",e=>{switch(e.key){case"ArrowLeft":previousSlide();break;case"ArrowRight":case" ":e.preventDefault();nextSlide();break;case"f":case"F":toggleFullscreen();break;case"s":case"S":toggleSidebar();break;case"?":toggleHelp();break;case"Escape":const sb=document.getElementById("sidebar");const ho=document.getElementById("help-overlay");if(sb.classList.contains("open"))toggleSidebar();else if(!ho.classList.contains("hidden"))ho.classList.add("hidden");break;}});
+generateSidebar();showSlide(0);</script></body></html>
