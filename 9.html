@@ -1,0 +1,752 @@
+<!DOCTYPE html><html lang="uk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Списки контролю доступу</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><style>:root {
+            --presentation-bg: linear-gradient(135deg, #4f46e5 0%, #312e81 100%);
+            /* Кольори теми - шкали Tailwind CSS, задаються разом із фоном (див. BG_PRESETS / applyBackground):
+               --heading       заголовки h1 (slate-900)
+               --accent        декоративний акцент: лінії, маркери, рамки (500)
+               --accent-2      підзаголовки h2 (700)
+               --accent-strong заливки з білим текстом та дрібний акцентний текст (700)
+               --accent-tint   світлий фон парних рядків і активних елементів (50) */
+            --heading: #0f172a;
+            --accent: #6366f1;
+            --accent-2: #4338ca;
+            --accent-strong: #4338ca;
+            --accent-tint: #eef2ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--presentation-bg);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #editor-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #editor-container.hidden {
+            display: none;
+        }
+
+        #editor-header {
+            background: #2d3748;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #editor-header h2 {
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        #editor-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--accent-strong);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #4a5568;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #2d3748;
+        }
+
+        #markdown-input {
+            flex: 1;
+            padding: 2rem;
+            background: #1a202c;
+            color: #e2e8f0;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: none;
+        }
+
+        #markdown-input:focus {
+            outline: none;
+        }
+
+        .slide-container {
+            position: relative;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+        }
+
+        .slide {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 3rem;
+            position: relative;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .slide::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .slide::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+
+        .slide h1 {
+            color: var(--heading);
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 45%, transparent 100%) left bottom / 100% 4px no-repeat;
+            padding-bottom: 0.5rem;
+        }
+
+        .slide h2 {
+            color: var(--accent-2);
+            font-size: 2rem;
+            margin: 2rem 0 1rem 0;
+        }
+
+        .slide h3 {
+            color: #4a5568;
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .slide p {
+            color: #2d3748;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        .slide ul, .slide ol {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .slide li {
+            color: #2d3748;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 0.5rem;
+        }
+
+        .slide pre {
+            background: #282c34;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        .slide pre code {
+            background: transparent;
+            color: #abb2bf;
+        }
+
+        .slide code {
+            font-family: 'Courier New', Consolas, Monaco, monospace;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .slide h1 code, .slide h2 code, .slide h3 code {
+            font-size: 0.85em;
+            background: rgba(237, 242, 247, 0.5);
+            padding: 0.1em 0.3em;
+            border-radius: 3px;
+        }
+
+        .slide p code {
+            background: #edf2f7;
+            color: #e53e3e;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .slide blockquote {
+            border-left: 4px solid var(--accent);
+            padding-left: 1.5rem;
+            margin: 1.5rem 0;
+            font-style: italic;
+            color: #4a5568;
+        }
+
+        .slide img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .slide table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .slide th, .slide td {
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .slide th {
+            background: var(--accent-strong);
+            color: white;
+            font-weight: 600;
+        }
+
+        .slide tr:nth-child(even) {
+            background: var(--accent-tint);
+        }
+
+        .slide li::marker {
+            color: var(--accent);
+        }
+
+        .note {
+            background: #fff5f5;
+            border-left: 4px solid #fc8181;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .note strong {
+            color: #c53030;
+        }
+
+        .warning {
+            background: #fffaf0;
+            border-left: 4px solid #f6ad55;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .warning strong {
+            color: #c05621;
+        }
+
+        .info {
+            background: #ebf8ff;
+            border-left: 4px solid #4299e1;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .info strong {
+            color: #2c5282;
+        }
+
+        .success {
+            background: #f0fff4;
+            border-left: 4px solid #48bb78;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .success strong {
+            color: #22543d;
+        }
+
+        .danger {
+            background: #fff5f5;
+            border-left: 4px solid #f56565;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .danger strong {
+            color: #742a2a;
+        }
+
+        .tip {
+            background: #fefcbf;
+            border-left: 4px solid #ecc94b;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .tip strong {
+            color: #744210;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: 100;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: white;
+            transition: width 0.3s;
+        }
+
+        .slide-number {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            color: var(--accent-strong);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #sidebar {
+            position: fixed;
+            right: -320px;
+            top: 0;
+            width: 320px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            transition: right 0.3s ease;
+            z-index: 200;
+            padding: 1rem;
+        }
+
+        #sidebar.open {
+            right: 0;
+        }
+
+        #sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+
+        #sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        #sidebar-header h3 {
+            color: var(--accent-strong);
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        #sidebar-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #4a5568;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+
+        #sidebar-close:hover {
+            color: var(--accent-strong);
+        }
+
+        .slide-thumbnail {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            overflow: hidden;
+        }
+
+        .slide-thumbnail:hover {
+            border-color: var(--accent);
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 20%, transparent);
+            transform: translateX(-4px);
+        }
+
+        .slide-thumbnail.active {
+            border-color: var(--accent);
+            background: var(--accent-tint);
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent);
+        }
+
+        .slide-thumbnail-number {
+            display: inline-block;
+            background: var(--accent-strong);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .slide-thumbnail-content {
+            font-size: 0.85rem;
+            color: #2d3748;
+            line-height: 1.4;
+            max-height: 4.2rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slide-thumbnail-content::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 50%;
+            height: 1.4rem;
+            background: linear-gradient(to right, transparent, white);
+        }
+
+        .slide-thumbnail.active .slide-thumbnail-content::after {
+            background: linear-gradient(to right, transparent, var(--accent-tint));
+        }
+
+        .slide-thumbnail-title {
+            font-weight: 600;
+            color: var(--accent-strong);
+            margin-bottom: 0.25rem;
+        }
+
+        #sidebar-toggle {
+            position: fixed;
+            right: 1rem;
+            top: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 8px;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 150;
+        }
+
+        #sidebar-toggle:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+
+        .mermaid {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+            overflow: visible; /* щоб не обрізати тіні / розширені ноди */
+        }
+
+        /* Запобігаємо обрізанню останньої літери в нодах Mermaid через зміну font-weight після розрахунку розміру */
+        .mermaid svg { overflow: visible !important; }
+        /* перестраховка проти обрізання foreignObject (на випадок інших діаграм) */
+        .mermaid svg foreignObject { overflow: visible !important; }
+
+        /* Ізоляція підписів Mermaid від типографіки слайду.
+           Mermaid рендерить підписи як HTML (<p>, <li>, <code>) всередині foreignObject і міряє їх
+           без стилів слайду. Без цього скидання правила .slide p / .slide li збільшують шрифт
+           і міжрядковий інтервал уже після розрахунку розмірів - і текст вилазить за межі блоків. */
+        .mermaid svg p,
+        .mermaid svg li,
+        .mermaid svg ul,
+        .mermaid svg ol {
+            font-size: inherit;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+            color: inherit;
+        }
+        .mermaid svg code {
+            font-size: inherit;
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        .plantuml-diagram {
+            max-width: 100%;
+            height: auto;
+            margin: 1.5rem auto;
+            display: block;
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #help-overlay {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+            transition: opacity 0.3s;
+        }
+
+        #help-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #help-overlay kbd {
+            background: #2d3748;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+
+        .mermaid-error {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            padding: 1rem;
+            border-radius: 6px;
+            color: #742a2a;
+            margin: 1.5rem 0;
+        }
+
+        .mermaid-error pre {
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            white-space: pre-wrap;
+        }
+
+        /* Вибір фону презентації */
+        #bg-picker {
+            position: fixed;
+            bottom: 6rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(360px, calc(100vw - 2rem));
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            padding: 1rem 1.1rem 1.1rem;
+            z-index: 160;
+            color: #2d3748;
+        }
+
+        #bg-picker.hidden {
+            display: none;
+        }
+
+        #bg-picker h4 {
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .bg-swatches {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+        }
+
+        .bg-swatch {
+            aspect-ratio: 16 / 10;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+            transition: transform 0.15s;
+        }
+
+        /* Мініатюра теми: фон + маленька «картка слайду» з акцентною лінією */
+        .bg-swatch {
+            position: relative;
+        }
+
+        .bg-swatch::after {
+            content: '';
+            position: absolute;
+            left: 22%;
+            right: 22%;
+            top: 30%;
+            bottom: 30%;
+            border-radius: 3px;
+            background:
+                linear-gradient(90deg, var(--sw-accent), transparent) 18% 38% / 55% 3px no-repeat,
+                white;
+        }
+
+        .bg-swatch:hover {
+            transform: scale(1.06);
+        }
+
+        .bg-swatch.active {
+            border-color: #2d3748;
+            box-shadow: 0 0 0 2px white inset;
+        }
+
+        .bg-custom {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .bg-custom input[type="color"] {
+            width: 38px;
+            height: 30px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 2px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .bg-custom .bg-hint {
+            color: #718096;
+            font-size: 0.75rem;
+            width: 100%;
+        }
+
+        /* Повноекранний режим - зберігаємо обраний фон */
+        #presentation-container:fullscreen {
+            background: var(--presentation-bg);
+        }
+
+        #presentation-container:-webkit-full-screen {
+            background: var(--presentation-bg);
+        }
+
+        #presentation-container:-moz-full-screen {
+            background: var(--presentation-bg);
+        }
+
+        #presentation-container:-ms-fullscreen {
+            background: var(--presentation-bg);
+        }
+#presentation-container:fullscreen,#presentation-container:-webkit-full-screen,#presentation-container:-moz-full-screen,#presentation-container:-ms-fullscreen{background:var(--presentation-bg)!important;}:root{--presentation-bg:linear-gradient(135deg, #0d9488 0%, #134e4a 100%);--heading:#0f172a;--accent:#14b8a6;--accent-2:#0f766e;--accent-strong:#0f766e;--accent-tint:#f0fdfa;}</style></head><body><div id="presentation-container"><div class="progress"><div class="progress-bar" id="progress-bar"></div></div><button id="sidebar-toggle" onclick="toggleSidebar()" title="Навігація слайдами (S)">☰</button><div id="sidebar"><div id="sidebar-header"><h3>📑 Слайди</h3><button id="sidebar-close" onclick="toggleSidebar()">✕</button></div><div id="sidebar-content"></div></div><div class="slide-container"><div class="slide" id="current-slide"></div></div><div class="controls"><button class="control-btn" onclick="previousSlide()" title="Попередній (←)">←</button><button class="control-btn" onclick="nextSlide()" title="Наступний (→)">→</button><button class="control-btn" onclick="toggleFullscreen()" title="Повноекранний режим (F)">⛶</button><button class="control-btn" onclick="toggleHelp()" title="Допомога (?)">?</button></div><div class="slide-number" id="slide-number">1 / 16</div><div id="help-overlay" class="hidden"><strong>Гарячі клавіші:</strong><br><kbd>←</kbd> <kbd>→</kbd> Навігація<br><kbd>F</kbd> Повноекранний режим<br><kbd>S</kbd> Sidebar<br><kbd>?</kbd> Допомога<br><kbd>Esc</kbd> Закрити</div></div><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script><script>const slides=["<h1>Списки контролю доступу</h1>\n<p><strong>Курс:</strong> Організація комп'ютерних мереж / Комп'ютерні мережі</p>\n<p><strong>Лектор:</strong> Кобилянський Антон</p>\n","<h1>📋 План лекції</h1>\n<ol>\n<li>🤔 Навіщо потрібні списки контролю доступу</li>\n<li>🛡️ Що таке ACL і як він обробляє пакети</li>\n<li>⚖️ Стандартні та розширені ACL</li>\n<li>🎭 Шаблонна маска</li>\n<li>🚪 Напрямок і місце застосування</li>\n<li>🧪 Приклади налаштування в Packet Tracer</li>\n<li>🔍 Перевірка та типові помилки</li>\n<li>📚 Висновки, питання, глосарій</li>\n</ol>\n","<h1>🤔 Навіщо потрібні списки контролю доступу</h1>\n<p><strong>Головна ідея:</strong> Маршрутизатор за замовчуванням не перевіряє, <strong>хто</strong> і <strong>навіщо</strong> надсилає пакет. Якщо в таблиці маршрутизації є шлях до адреси призначення, пакет буде передано далі.</p>\n<table>\n<thead>\n<tr>\n<th>Без фільтрації 😟</th>\n<th>З фільтрацією 😎</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>Будь-який вузол може звернутися до будь-якого іншого</td>\n<td>Доступ мають лише ті, кому він дозволений</td>\n</tr>\n<tr>\n<td>Студентська мережа \"бачить\" сервер бухгалтерії</td>\n<td>Сервер бухгалтерії доступний лише з мережі бухгалтерії</td>\n</tr>\n<tr>\n<td>Зайвий трафік навантажує канали</td>\n<td>Непотрібний трафік відкидається на маршрутизаторі</td>\n</tr>\n</tbody></table>\n<div class=\"tip\"><strong>💡 Аналогія</strong> <p>🏢 Охоронець на вході до бізнес-центру має список: кого пропускати, а кого ні. Він перевіряє кожного відвідувача за списком і лише після цього відчиняє турнікет. ACL виконує таку саму роль для пакетів на маршрутизаторі.</p>\n</div>\n\n\n\n\n\n<div class=\"info\"><strong>ℹ️ Для чого застосовують ACL</strong> <ul>\n<li>🔒 Обмеження доступу до окремих мереж, серверів і сервісів</li>\n<li>🧹 Відкидання небажаного трафіку на межі мережі</li>\n<li>📉 Зменшення зайвого навантаження на канали зв'язку</li>\n</ul>\n</div>\n\n","<h1>🛡️ Що таке ACL</h1>\n<div class=\"info\"><strong>ℹ️ Визначення</strong> <p><strong>ACL</strong> (Access Control List / Список контролю доступу) - упорядкований набір правил на мережевому пристрої (найчастіше на маршрутизаторі), за якими він вирішує: <strong>пропустити</strong> пакет чи <strong>відкинути</strong> його.</p>\n</div>\n\n\n\n<p><strong>Кожне правило складається з двох частин:</strong></p>\n<table>\n<thead>\n<tr>\n<th>Частина</th>\n<th>Що означає</th>\n<th>Приклад</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>⚙️ <strong>Дія</strong></td>\n<td>Що зробити з пакетом</td>\n<td><code>permit</code> (дозволити) або <code>deny</code> (заборонити)</td>\n</tr>\n<tr>\n<td>🔎 <strong>Умова</strong></td>\n<td>Яким пакетам відповідає правило</td>\n<td>Пакети з мережі 172.16.10.0/24</td>\n</tr>\n</tbody></table>\n<p><strong>Що маршрутизатор може перевірити в пакеті:</strong></p>\n<ul>\n<li>📤 IP-адресу відправника</li>\n<li>📥 IP-адресу одержувача</li>\n<li>📦 Протокол: IP, TCP, UDP, ICMP</li>\n<li>🔢 Номер порту, тобто сервіс: 80 для вебсервера (HTTP), 53 для DNS</li>\n</ul>\n<div class=\"note\"><strong>📝 Важливо</strong> <p>ACL сам по собі нічого не фільтрує. Він починає працювати лише після того, як його <strong>застосували до інтерфейсу</strong> маршрутизатора.</p>\n</div>\n\n","<h1>🔄 Як ACL обробляє пакет</h1>\n<p><strong>Головна ідея:</strong> Правила перевіряються <strong>зверху вниз</strong>. Спрацьовує <strong>перше</strong> правило, якому відповідає пакет, і на цьому перевірка завершується.</p>\n\n<div class=\"mermaid\" data-source=\"graph TD\n    A[📦 Пакет&lt;br/&gt;надійшов] --&gt; B{Правило 1&lt;br/&gt;підходить?}\n    B --&gt;|так| X[⚙️ Виконати&lt;br/&gt;дію правила]\n    B --&gt;|ні| C{Правило 2&lt;br/&gt;підходить?}\n    C --&gt;|так| X\n    C --&gt;|ні| D[🚫 Неявна&lt;br/&gt;заборона]\n    style A fill:#e3f2fd,stroke:#1565c0\n    style B fill:#fff9c4,stroke:#f9a825\n    style C fill:#fff9c4,stroke:#f9a825\n    style X fill:#e8f5e9,stroke:#388e3c\n    style D fill:#fce4ec,stroke:#c2185b\"><svg id=\"exp-1794748879079-4-0\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" class=\"flowchart\" style=\"max-width: 330.2421875px;\" viewBox=\"0 0 330.2421875 666.140625\" role=\"graphics-document document\" aria-roledescription=\"flowchart-v2\"><style>#exp-1794748879079-4-0{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#exp-1794748879079-4-0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#exp-1794748879079-4-0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#exp-1794748879079-4-0 .error-icon{fill:#552222;}#exp-1794748879079-4-0 .error-text{fill:#552222;stroke:#552222;}#exp-1794748879079-4-0 .edge-thickness-normal{stroke-width:1px;}#exp-1794748879079-4-0 .edge-thickness-thick{stroke-width:3.5px;}#exp-1794748879079-4-0 .edge-pattern-solid{stroke-dasharray:0;}#exp-1794748879079-4-0 .edge-thickness-invisible{stroke-width:0;fill:none;}#exp-1794748879079-4-0 .edge-pattern-dashed{stroke-dasharray:3;}#exp-1794748879079-4-0 .edge-pattern-dotted{stroke-dasharray:2;}#exp-1794748879079-4-0 .marker{fill:#333333;stroke:#333333;}#exp-1794748879079-4-0 .marker.cross{stroke:#333333;}#exp-1794748879079-4-0 svg{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;}#exp-1794748879079-4-0 p{margin:0;}#exp-1794748879079-4-0 .label{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;color:#333;}#exp-1794748879079-4-0 .cluster-label text{fill:#333;}#exp-1794748879079-4-0 .cluster-label span{color:#333;}#exp-1794748879079-4-0 .cluster-label span p{background-color:transparent;}#exp-1794748879079-4-0 .label text,#exp-1794748879079-4-0 span{fill:#333;color:#333;}#exp-1794748879079-4-0 .node rect,#exp-1794748879079-4-0 .node circle,#exp-1794748879079-4-0 .node ellipse,#exp-1794748879079-4-0 .node polygon,#exp-1794748879079-4-0 .node path{fill:#ECECFF;stroke:#667eea;stroke-width:1px;}#exp-1794748879079-4-0 .rough-node .label text,#exp-1794748879079-4-0 .node .label text,#exp-1794748879079-4-0 .image-shape .label,#exp-1794748879079-4-0 .icon-shape .label{text-anchor:middle;}#exp-1794748879079-4-0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#exp-1794748879079-4-0 .rough-node .label,#exp-1794748879079-4-0 .node .label,#exp-1794748879079-4-0 .image-shape .label,#exp-1794748879079-4-0 .icon-shape .label{text-align:center;}#exp-1794748879079-4-0 .node.clickable{cursor:pointer;}#exp-1794748879079-4-0 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#exp-1794748879079-4-0 .arrowheadPath{fill:#333333;}#exp-1794748879079-4-0 .edgePaths .path{stroke:#333333;stroke-width:1px;}#exp-1794748879079-4-0 .flowchart-link{stroke:#333333;fill:none;}#exp-1794748879079-4-0 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1794748879079-4-0 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#exp-1794748879079-4-0 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1794748879079-4-0 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#exp-1794748879079-4-0 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#exp-1794748879079-4-0 .cluster text{fill:#333;}#exp-1794748879079-4-0 .cluster span{color:#333;}#exp-1794748879079-4-0 .node .collapsed-indicator{fill:#aaaa33;stroke:none;opacity:0.6;}#exp-1794748879079-4-0 .node .collapsed-separator{stroke:#aaaa33;stroke-width:0.75px;}#exp-1794748879079-4-0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#exp-1794748879079-4-0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#exp-1794748879079-4-0 rect.text{fill:none;stroke-width:0;}#exp-1794748879079-4-0 .icon-shape,#exp-1794748879079-4-0 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1794748879079-4-0 .icon-shape p,#exp-1794748879079-4-0 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#exp-1794748879079-4-0 .icon-shape .label rect,#exp-1794748879079-4-0 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1794748879079-4-0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#exp-1794748879079-4-0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#exp-1794748879079-4-0 .node .neo-node{stroke:#667eea;}#exp-1794748879079-4-0 [data-look=\"neo\"].node rect,#exp-1794748879079-4-0 [data-look=\"neo\"].cluster rect,#exp-1794748879079-4-0 [data-look=\"neo\"].node polygon{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794748879079-4-0 [data-look=\"neo\"].swimlane.cluster rect{filter:none;}#exp-1794748879079-4-0 [data-look=\"neo\"].node path{stroke:#667eea;stroke-width:1px;}#exp-1794748879079-4-0 [data-look=\"neo\"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794748879079-4-0 [data-look=\"neo\"].node .neo-line path{stroke:#667eea;filter:none;}#exp-1794748879079-4-0 [data-look=\"neo\"].node circle{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794748879079-4-0 [data-look=\"neo\"].node circle .state-start{fill:#000000;}#exp-1794748879079-4-0 [data-look=\"neo\"].icon-shape .icon{fill:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794748879079-4-0 [data-look=\"neo\"].icon-shape .icon-neo path{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794748879079-4-0 :root{--mermaid-font-family:\"trebuchet ms\",verdana,arial,sans-serif;}</style><g><marker id=\"exp-1794748879079-4-0_flowchart-v2-pointEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 0 L 10 5 L 0 10 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794748879079-4-0_flowchart-v2-pointStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"4.5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 5 L 10 10 L 10 0 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794748879079-4-0_flowchart-v2-pointEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"11.5\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"10.5\" markerHeight=\"14\" orient=\"auto\"><path d=\"M 0 0 L 11.5 7 L 0 14 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794748879079-4-0_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></polygon></marker><marker id=\"exp-1794748879079-4-0_flowchart-v2-circleEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"11\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794748879079-4-0_flowchart-v2-circleStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-1\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794748879079-4-0_flowchart-v2-circleEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refY=\"5\" refX=\"12.25\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794748879079-4-0_flowchart-v2-circleStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-2\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794748879079-4-0_flowchart-v2-crossEnd\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"12\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794748879079-4-0_flowchart-v2-crossStart\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"-1\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794748879079-4-0_flowchart-v2-crossEnd-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"17.7\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5;\"></path></marker><marker id=\"exp-1794748879079-4-0_flowchart-v2-crossStart-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"-3.5\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5; stroke-dasharray: 1, 0;\"></path></marker><g class=\"root\"><g class=\"clusters\"></g><g class=\"edgePaths\"><path d=\"M169.455,80L169.455,84.167C169.455,88.333,169.455,96.667,169.455,104.333C169.455,112,169.455,119,169.455,122.5L169.455,126\" id=\"exp-1794748879079-4-0-L_A_B_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_A_B_0\" data-points=\"W3sieCI6MTY5LjQ1NTA3ODEyNSwieSI6ODB9LHsieCI6MTY5LjQ1NTA3ODEyNSwieSI6MTA1fSx7IngiOjE2OS40NTUwNzgxMjUsInkiOjEzMH1d\" data-look=\"classic\" marker-end=\"url(#exp-1794748879079-4-0_flowchart-v2-pointEnd)\"></path><path d=\"M132.122,246.737L120.472,259.126C108.822,271.515,85.522,296.293,73.872,327.687C62.223,359.082,62.223,397.094,62.223,435.105C62.223,473.117,62.223,511.129,63.445,535.651C64.667,560.172,67.11,571.204,68.332,576.72L69.554,582.235\" id=\"exp-1794748879079-4-0-L_B_X_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_B_X_0\" data-points=\"W3sieCI6MTMyLjEyMTY5OTAzNjE3NjMsInkiOjI0Ni43MzY5MzM0MTExNzYzfSx7IngiOjYyLjIyMjY1NjI1LCJ5IjozMjEuMDcwMzEyNX0seyJ4Ijo2Mi4yMjI2NTYyNSwieSI6NDM1LjEwNTQ2ODc1fSx7IngiOjYyLjIyMjY1NjI1LCJ5Ijo1NDkuMTQwNjI1fSx7IngiOjcwLjQxOTM2MDAxNzEyMzI4LCJ5Ijo1ODYuMTQwNjI1fV0=\" data-look=\"classic\" marker-end=\"url(#exp-1794748879079-4-0_flowchart-v2-pointEnd)\"></path><path d=\"M199.175,254.351L206.159,265.471C213.144,276.591,227.113,298.83,234.097,315.45C241.082,332.07,241.082,343.07,241.082,348.57L241.082,354.07\" id=\"exp-1794748879079-4-0-L_B_C_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_B_C_0\" data-points=\"W3sieCI6MTk5LjE3NDYyMzcyNDY0MDc1LCJ5IjoyNTQuMzUwNzY2OTAwMzU5MjV9LHsieCI6MjQxLjA4MjAzMTI1LCJ5IjozMjEuMDcwMzEyNX0seyJ4IjoyNDEuMDgyMDMxMjUsInkiOjM1OC4wNzAzMTI1fV0=\" data-look=\"classic\" marker-end=\"url(#exp-1794748879079-4-0_flowchart-v2-pointEnd)\"></path><path d=\"M206.879,477.938L197.403,489.805C187.927,501.672,168.974,525.406,153.914,542.964C138.854,560.522,127.686,571.904,122.103,577.595L116.519,583.285\" id=\"exp-1794748879079-4-0-L_C_X_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_C_X_0\" data-points=\"W3sieCI6MjA2Ljg3OTE1MjU0NTg1MzIsInkiOjQ3Ny45Mzc3NDYyOTU4NTMyM30seyJ4IjoxNTAuMDIxNDg0Mzc1LCJ5Ijo1NDkuMTQwNjI1fSx7IngiOjExMy43MTc0MTIyNDMxNTA2OCwieSI6NTg2LjE0MDYyNX1d\" data-look=\"classic\" marker-end=\"url(#exp-1794748879079-4-0_flowchart-v2-pointEnd)\"></path><path d=\"M252.299,500.924L253.668,508.96C255.038,516.996,257.777,533.068,259.146,546.605C260.516,560.141,260.516,571.141,260.516,576.641L260.516,582.141\" id=\"exp-1794748879079-4-0-L_C_D_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_C_D_0\" data-points=\"W3sieCI6MjUyLjI5ODY2Mzg0MDI1MjU3LCJ5Ijo1MDAuOTIzOTkyNDA5NzQ3NH0seyJ4IjoyNjAuNTE1NjI1LCJ5Ijo1NDkuMTQwNjI1fSx7IngiOjI2MC41MTU2MjUsInkiOjU4Ni4xNDA2MjV9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1794748879079-4-0_flowchart-v2-pointEnd)\"></path></g><g class=\"edgeLabels\"><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_A_B_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\" transform=\"translate(62.22265625, 435.10546875)\"><g class=\"label\" data-id=\"L_B_X_0\" transform=\"translate(-12.34375, -12)\"><foreignObject width=\"24.6875\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"><p>так</p></span></div></foreignObject></g></g><g class=\"edgeLabel\" transform=\"translate(241.08203125, 321.0703125)\"><g class=\"label\" data-id=\"L_B_C_0\" transform=\"translate(-6.5234375, -12)\"><foreignObject width=\"13.046875\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"><p>ні</p></span></div></foreignObject></g></g><g class=\"edgeLabel\" transform=\"translate(162.27758, 533.79231)\"><g class=\"label\" data-id=\"L_C_X_0\" transform=\"translate(-12.34375, -12)\"><foreignObject width=\"24.6875\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"><p>так</p></span></div></foreignObject></g></g><g class=\"edgeLabel\" transform=\"translate(260.515625, 549.140625)\"><g class=\"label\" data-id=\"L_C_D_0\" transform=\"translate(-6.5234375, -12)\"><foreignObject width=\"13.046875\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"><p>ні</p></span></div></foreignObject></g></g></g><g class=\"nodes\"><g class=\"node default  \" id=\"exp-1794748879079-4-0-flowchart-A-0\" data-look=\"classic\" transform=\"translate(169.455078125, 44)\"><rect class=\"basic label-container\" style=\"fill:#e3f2fd !important;stroke:#1565c0 !important\" x=\"-59.55078125\" y=\"-36\" width=\"119.1015625\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-35.55078125, -24)\"><rect></rect><foreignObject width=\"71.1015625\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>📦 Пакет<br>надійшов</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794748879079-4-0-flowchart-B-1\" data-look=\"classic\" transform=\"translate(169.455078125, 207.03515625)\"><polygon points=\"77.03515625,0 154.0703125,-77.03515625 77.03515625,-154.0703125 0,-77.03515625\" class=\"label-container\" transform=\"translate(-76.53515625, 77.03515625)\" style=\"fill:#fff9c4 !important;stroke:#f9a825 !important\"></polygon><g class=\"label\" style=\"\" transform=\"translate(-41.03515625, -24)\"><rect></rect><foreignObject width=\"82.0703125\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>Правило 1<br>підходить?</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794748879079-4-0-flowchart-X-3\" data-look=\"classic\" transform=\"translate(78.39453125, 622.140625)\"><rect class=\"basic label-container\" style=\"fill:#e8f5e9 !important;stroke:#388e3c !important\" x=\"-70.39453125\" y=\"-36\" width=\"140.7890625\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-46.39453125, -24)\"><rect></rect><foreignObject width=\"92.7890625\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>⚙️ Виконати<br>дію правила</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794748879079-4-0-flowchart-C-5\" data-look=\"classic\" transform=\"translate(241.08203125, 435.10546875)\"><polygon points=\"77.03515625,0 154.0703125,-77.03515625 77.03515625,-154.0703125 0,-77.03515625\" class=\"label-container\" transform=\"translate(-76.53515625, 77.03515625)\" style=\"fill:#fff9c4 !important;stroke:#f9a825 !important\"></polygon><g class=\"label\" style=\"\" transform=\"translate(-41.03515625, -24)\"><rect></rect><foreignObject width=\"82.0703125\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>Правило 2<br>підходить?</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794748879079-4-0-flowchart-D-9\" data-look=\"classic\" transform=\"translate(260.515625, 622.140625)\"><rect class=\"basic label-container\" style=\"fill:#fce4ec !important;stroke:#c2185b !important\" x=\"-61.7265625\" y=\"-36\" width=\"123.453125\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-37.7265625, -24)\"><rect></rect><foreignObject width=\"75.453125\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>🚫 Неявна<br>заборона</p></span></div></foreignObject></g></g></g></g></g><defs><filter id=\"exp-1794748879079-4-0-drop-shadow\" height=\"130%\" width=\"130%\"><feDropShadow dx=\"4\" dy=\"4\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs><defs><filter id=\"exp-1794748879079-4-0-drop-shadow-small\" height=\"150%\" width=\"150%\"><feDropShadow dx=\"2\" dy=\"2\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs></svg></div>\n<div class=\"danger\"><strong>🚫 Неявна заборона</strong> <p>Наприкінці кожного ACL є невидиме правило <code>deny any</code> (у розширеному списку <code>deny ip any any</code>): пакет, який не підійшов під жодне правило, <strong>відкидається</strong>. У конфігурації цього правила не видно, але воно діє завжди.</p>\n</div>\n\n\n\n\n\n<div class=\"warning\"><strong>⚠️ Порядок правил має значення</strong> <p>Конкретні правила розміщують <strong>вище</strong>, загальні <strong>нижче</strong>. Якщо першим стоїть <code>permit any</code>, до наступних правил перевірка вже ніколи не дійде.</p>\n</div>\n\n","<h1>⚖️ Стандартні та розширені ACL</h1>\n<table>\n<thead>\n<tr>\n<th>Критерій</th>\n<th>📗 Стандартний ACL</th>\n<th>📘 Розширений ACL</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>🔎 Що перевіряє</td>\n<td>Лише IP-адресу відправника</td>\n<td>Адреси відправника й одержувача, протокол, порт</td>\n</tr>\n<tr>\n<td>🔢 Номери</td>\n<td>1-99, 1300-1999</td>\n<td>100-199, 2000-2699</td>\n</tr>\n<tr>\n<td>🎯 Точність</td>\n<td>Груба: \"усе або нічого\"</td>\n<td>Висока: можна закрити один сервіс</td>\n</tr>\n<tr>\n<td>🧩 Складність</td>\n<td>Простий</td>\n<td>Складніший</td>\n</tr>\n<tr>\n<td>💡 Типова задача</td>\n<td>Заборонити мережі A доступ до мережі B</td>\n<td>Заборонити мережі A лише доступ за HTTP до сервера</td>\n</tr>\n</tbody></table>\n<div class=\"tip\"><strong>💡 Продовження аналогії</strong> <p>Стандартний ACL: охоронець дивиться лише на те, <strong>звідки</strong> прийшов відвідувач. Розширений ACL: охоронець з'ясовує, <strong>звідки</strong> відвідувач, <strong>до кого</strong> йде і <strong>з якою метою</strong>.</p>\n</div>\n\n\n\n\n\n<div class=\"info\"><strong>ℹ️ Нумеровані та іменовані ACL</strong> <p>Список можна позначити <strong>номером</strong> (тип визначається діапазоном) або <strong>іменем</strong>. Номер нічого не говорить про призначення списку, тому в реальних мережах зручніші імена, наприклад <code>BLOCK_WEB</code>.</p>\n</div>\n\n","<h1>🎭 Шаблонна маска</h1>\n<div class=\"info\"><strong>ℹ️ Визначення</strong> <p><strong>Шаблонна маска</strong> (wildcard mask) показує, які біти адреси правило має перевіряти: біт <strong>0</strong> означає \"має збігатися\", біт <strong>1</strong> означає \"може бути будь-яким\". У типових випадках це маска підмережі \"навпаки\".</p>\n</div>\n\n\n\n<p><strong>Просте правило обчислення:</strong> від 255.255.255.255 відняти маску підмережі.</p>\n<table>\n<thead>\n<tr>\n<th>Префікс</th>\n<th>Маска підмережі</th>\n<th>Шаблонна маска</th>\n<th>Що охоплює</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>/24</td>\n<td>255.255.255.0</td>\n<td>0.0.0.255</td>\n<td>256 адрес мережі</td>\n</tr>\n<tr>\n<td>/26</td>\n<td>255.255.255.192</td>\n<td>0.0.0.63</td>\n<td>64 адреси підмережі</td>\n</tr>\n<tr>\n<td>/16</td>\n<td>255.255.0.0</td>\n<td>0.0.255.255</td>\n<td>Усю мережу /16</td>\n</tr>\n<tr>\n<td>/32</td>\n<td>255.255.255.255</td>\n<td>0.0.0.0</td>\n<td>Одну конкретну адресу</td>\n</tr>\n</tbody></table>\n<p><strong>Два зручні скорочення:</strong></p>\n<table>\n<thead>\n<tr>\n<th>Скорочення</th>\n<th>Повний запис</th>\n<th>Значення</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>🖥️ <code>host 172.16.30.10</code></td>\n<td><code>172.16.30.10 0.0.0.0</code></td>\n<td>Один конкретний вузол</td>\n</tr>\n<tr>\n<td>🌍 <code>any</code></td>\n<td><code>0.0.0.0 255.255.255.255</code></td>\n<td>Будь-яка адреса</td>\n</tr>\n</tbody></table>\n<div class=\"warning\"><strong>⚠️ Поширена помилка</strong> <p>Написати в ACL маску підмережі (255.255.255.0) замість шаблонної (0.0.0.255). Команда буде прийнята, але правило охопить зовсім інші адреси.</p>\n</div>\n\n","<h1>🚪 Напрямок і місце застосування</h1>\n<p><strong>Головна ідея:</strong> ACL застосовують до конкретного інтерфейсу в конкретному напрямку. Напрямок визначається <strong>з погляду маршрутизатора</strong>.</p>\n<table>\n<thead>\n<tr>\n<th>Напрямок</th>\n<th>Коли перевіряється пакет</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>📥 <strong>in</strong> (вхідний)</td>\n<td>Коли пакет <strong>входить</strong> у маршрутизатор через інтерфейс, до пошуку маршруту</td>\n</tr>\n<tr>\n<td>📤 <strong>out</strong> (вихідний)</td>\n<td>Коли пакет <strong>виходить</strong> з маршрутизатора через інтерфейс, після пошуку маршруту</td>\n</tr>\n</tbody></table>\n<p><strong>Де розміщувати список:</strong></p>\n<table>\n<thead>\n<tr>\n<th>Тип ACL</th>\n<th>Рекомендація</th>\n<th>Чому</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>📗 Стандартний</td>\n<td>Ближче до <strong>одержувача</strong></td>\n<td>Він бачить лише відправника, тому поблизу джерела заблокував би доступ узагалі всюди</td>\n</tr>\n<tr>\n<td>📘 Розширений</td>\n<td>Ближче до <strong>відправника</strong></td>\n<td>Він точно знає, що блокувати, тому зайвий трафік не подорожує мережею</td>\n</tr>\n</tbody></table>\n<div class=\"note\"><strong>📝 Обмеження</strong> <p>На одному інтерфейсі в одному напрямку може діяти лише <strong>один</strong> ACL для IPv4. Тому на інтерфейсі можливі максимум два такі списки: один на вхід, один на вихід.</p>\n</div>\n\n","<h1>🧪 Приклад: стандартний ACL</h1>\n<p><strong>Завдання:</strong> заборонити мережі A (172.16.10.0/24) доступ до серверної мережі (172.16.30.0/24), усім іншим дозволити. Маршрутизатор має три інтерфейси, у Packet Tracer підійде модель 2911.</p>\n\n<div class=\"mermaid\" data-source=\"graph LR\n    A[💻 Мережа A&lt;br/&gt;172.16.10.0] ---|G0/0| R[🌐 R1]\n    B[💻 Мережа B&lt;br/&gt;172.16.20.0] ---|G0/1| R\n    R ---|G0/2| S[🗄️ Сервер&lt;br/&gt;172.16.30.10]\n    style A fill:#fce4ec,stroke:#c2185b\n    style B fill:#e8f5e9,stroke:#388e3c\n    style R fill:#e3f2fd,stroke:#1565c0\n    style S fill:#fff3e0,stroke:#ef6c00\"><svg id=\"exp-1794748879098-8-0\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" class=\"flowchart\" style=\"max-width: 554.1015625px;\" viewBox=\"0 0 554.1015625 210\" role=\"graphics-document document\" aria-roledescription=\"flowchart-v2\"><style>#exp-1794748879098-8-0{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#exp-1794748879098-8-0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#exp-1794748879098-8-0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#exp-1794748879098-8-0 .error-icon{fill:#552222;}#exp-1794748879098-8-0 .error-text{fill:#552222;stroke:#552222;}#exp-1794748879098-8-0 .edge-thickness-normal{stroke-width:1px;}#exp-1794748879098-8-0 .edge-thickness-thick{stroke-width:3.5px;}#exp-1794748879098-8-0 .edge-pattern-solid{stroke-dasharray:0;}#exp-1794748879098-8-0 .edge-thickness-invisible{stroke-width:0;fill:none;}#exp-1794748879098-8-0 .edge-pattern-dashed{stroke-dasharray:3;}#exp-1794748879098-8-0 .edge-pattern-dotted{stroke-dasharray:2;}#exp-1794748879098-8-0 .marker{fill:#333333;stroke:#333333;}#exp-1794748879098-8-0 .marker.cross{stroke:#333333;}#exp-1794748879098-8-0 svg{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;}#exp-1794748879098-8-0 p{margin:0;}#exp-1794748879098-8-0 .label{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;color:#333;}#exp-1794748879098-8-0 .cluster-label text{fill:#333;}#exp-1794748879098-8-0 .cluster-label span{color:#333;}#exp-1794748879098-8-0 .cluster-label span p{background-color:transparent;}#exp-1794748879098-8-0 .label text,#exp-1794748879098-8-0 span{fill:#333;color:#333;}#exp-1794748879098-8-0 .node rect,#exp-1794748879098-8-0 .node circle,#exp-1794748879098-8-0 .node ellipse,#exp-1794748879098-8-0 .node polygon,#exp-1794748879098-8-0 .node path{fill:#ECECFF;stroke:#667eea;stroke-width:1px;}#exp-1794748879098-8-0 .rough-node .label text,#exp-1794748879098-8-0 .node .label text,#exp-1794748879098-8-0 .image-shape .label,#exp-1794748879098-8-0 .icon-shape .label{text-anchor:middle;}#exp-1794748879098-8-0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#exp-1794748879098-8-0 .rough-node .label,#exp-1794748879098-8-0 .node .label,#exp-1794748879098-8-0 .image-shape .label,#exp-1794748879098-8-0 .icon-shape .label{text-align:center;}#exp-1794748879098-8-0 .node.clickable{cursor:pointer;}#exp-1794748879098-8-0 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#exp-1794748879098-8-0 .arrowheadPath{fill:#333333;}#exp-1794748879098-8-0 .edgePaths .path{stroke:#333333;stroke-width:1px;}#exp-1794748879098-8-0 .flowchart-link{stroke:#333333;fill:none;}#exp-1794748879098-8-0 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1794748879098-8-0 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#exp-1794748879098-8-0 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1794748879098-8-0 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#exp-1794748879098-8-0 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#exp-1794748879098-8-0 .cluster text{fill:#333;}#exp-1794748879098-8-0 .cluster span{color:#333;}#exp-1794748879098-8-0 .node .collapsed-indicator{fill:#aaaa33;stroke:none;opacity:0.6;}#exp-1794748879098-8-0 .node .collapsed-separator{stroke:#aaaa33;stroke-width:0.75px;}#exp-1794748879098-8-0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#exp-1794748879098-8-0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#exp-1794748879098-8-0 rect.text{fill:none;stroke-width:0;}#exp-1794748879098-8-0 .icon-shape,#exp-1794748879098-8-0 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1794748879098-8-0 .icon-shape p,#exp-1794748879098-8-0 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#exp-1794748879098-8-0 .icon-shape .label rect,#exp-1794748879098-8-0 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1794748879098-8-0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#exp-1794748879098-8-0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#exp-1794748879098-8-0 .node .neo-node{stroke:#667eea;}#exp-1794748879098-8-0 [data-look=\"neo\"].node rect,#exp-1794748879098-8-0 [data-look=\"neo\"].cluster rect,#exp-1794748879098-8-0 [data-look=\"neo\"].node polygon{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794748879098-8-0 [data-look=\"neo\"].swimlane.cluster rect{filter:none;}#exp-1794748879098-8-0 [data-look=\"neo\"].node path{stroke:#667eea;stroke-width:1px;}#exp-1794748879098-8-0 [data-look=\"neo\"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794748879098-8-0 [data-look=\"neo\"].node .neo-line path{stroke:#667eea;filter:none;}#exp-1794748879098-8-0 [data-look=\"neo\"].node circle{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794748879098-8-0 [data-look=\"neo\"].node circle .state-start{fill:#000000;}#exp-1794748879098-8-0 [data-look=\"neo\"].icon-shape .icon{fill:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794748879098-8-0 [data-look=\"neo\"].icon-shape .icon-neo path{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794748879098-8-0 :root{--mermaid-font-family:\"trebuchet ms\",verdana,arial,sans-serif;}</style><g><marker id=\"exp-1794748879098-8-0_flowchart-v2-pointEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 0 L 10 5 L 0 10 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794748879098-8-0_flowchart-v2-pointStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"4.5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 5 L 10 10 L 10 0 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794748879098-8-0_flowchart-v2-pointEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"11.5\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"10.5\" markerHeight=\"14\" orient=\"auto\"><path d=\"M 0 0 L 11.5 7 L 0 14 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794748879098-8-0_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></polygon></marker><marker id=\"exp-1794748879098-8-0_flowchart-v2-circleEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"11\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794748879098-8-0_flowchart-v2-circleStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-1\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794748879098-8-0_flowchart-v2-circleEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refY=\"5\" refX=\"12.25\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794748879098-8-0_flowchart-v2-circleStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-2\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794748879098-8-0_flowchart-v2-crossEnd\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"12\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794748879098-8-0_flowchart-v2-crossStart\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"-1\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794748879098-8-0_flowchart-v2-crossEnd-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"17.7\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5;\"></path></marker><marker id=\"exp-1794748879098-8-0_flowchart-v2-crossStart-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"-3.5\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5; stroke-dasharray: 1, 0;\"></path></marker><g class=\"root\"><g class=\"clusters\"></g><g class=\"edgePaths\"><path d=\"M152.539,44L159.683,44C166.827,44,181.115,44,196.91,50.167C212.706,56.333,230.009,68.667,238.661,74.833L247.313,81\" id=\"exp-1794748879098-8-0-L_A_R_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_A_R_0\" data-points=\"W3sieCI6MTUyLjUzOTA2MjUsInkiOjQ0fSx7IngiOjE5NS40MDIzNDM3NSwieSI6NDR9LHsieCI6MjQ3LjMxMjc1NjE0NzU0MSwieSI6ODF9XQ==\" data-look=\"classic\"></path><path d=\"M152.406,166L159.572,166C166.738,166,181.07,166,196.888,159.833C212.706,153.667,230.009,141.333,238.661,135.167L247.313,129\" id=\"exp-1794748879098-8-0-L_B_R_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_B_R_0\" data-points=\"W3sieCI6MTUyLjQwNjI1LCJ5IjoxNjZ9LHsieCI6MTk1LjQwMjM0Mzc1LCJ5IjoxNjZ9LHsieCI6MjQ3LjMxMjc1NjE0NzU0MSwieSI6MTI5fV0=\" data-look=\"classic\"></path><path d=\"M323.703,105L330.812,105C337.921,105,352.138,105,366.355,105C380.573,105,394.79,105,401.899,105L409.008,105\" id=\"exp-1794748879098-8-0-L_R_S_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_R_S_0\" data-points=\"W3sieCI6MzIzLjcwMzEyNSwieSI6MTA1fSx7IngiOjM2Ni4zNTU0Njg3NSwieSI6MTA1fSx7IngiOjQwOS4wMDc4MTI1LCJ5IjoxMDV9XQ==\" data-look=\"classic\"></path></g><g class=\"edgeLabels\"><g class=\"edgeLabel\" transform=\"translate(195.40234375, 44)\"><g class=\"label\" data-id=\"L_A_R_0\" transform=\"translate(-17.86328125, -12)\"><foreignObject width=\"35.7265625\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"><p>G0/0</p></span></div></foreignObject></g></g><g class=\"edgeLabel\" transform=\"translate(195.40234375, 166)\"><g class=\"label\" data-id=\"L_B_R_0\" transform=\"translate(-16.53515625, -12)\"><foreignObject width=\"33.0703125\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"><p>G0/1</p></span></div></foreignObject></g></g><g class=\"edgeLabel\" transform=\"translate(366.35546875, 105)\"><g class=\"label\" data-id=\"L_R_S_0\" transform=\"translate(-17.65234375, -12)\"><foreignObject width=\"35.3046875\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"><p>G0/2</p></span></div></foreignObject></g></g></g><g class=\"nodes\"><g class=\"node default  \" id=\"exp-1794748879098-8-0-flowchart-A-0\" data-look=\"classic\" transform=\"translate(80.26953125, 44)\"><rect class=\"basic label-container\" style=\"fill:#fce4ec !important;stroke:#c2185b !important\" x=\"-72.26953125\" y=\"-36\" width=\"144.5390625\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-48.26953125, -24)\"><rect></rect><foreignObject width=\"96.5390625\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>💻 Мережа A<br>172.16.10.0</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794748879098-8-0-flowchart-R-1\" data-look=\"classic\" transform=\"translate(280.984375, 105)\"><rect class=\"basic label-container\" style=\"fill:#e3f2fd !important;stroke:#1565c0 !important\" x=\"-42.71875\" y=\"-24\" width=\"85.4375\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-18.71875, -12)\"><rect></rect><foreignObject width=\"37.4375\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>🌐 R1</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794748879098-8-0-flowchart-B-2\" data-look=\"classic\" transform=\"translate(80.26953125, 166)\"><rect class=\"basic label-container\" style=\"fill:#e8f5e9 !important;stroke:#388e3c !important\" x=\"-72.13671875\" y=\"-36\" width=\"144.2734375\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-48.13671875, -24)\"><rect></rect><foreignObject width=\"96.2734375\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>💻 Мережа B<br>172.16.20.0</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794748879098-8-0-flowchart-S-5\" data-look=\"classic\" transform=\"translate(477.5546875, 105)\"><rect class=\"basic label-container\" style=\"fill:#fff3e0 !important;stroke:#ef6c00 !important\" x=\"-68.546875\" y=\"-36\" width=\"137.09375\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-44.546875, -24)\"><rect></rect><foreignObject width=\"89.09375\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>🗄️ Сервер<br>172.16.30.10</p></span></div></foreignObject></g></g></g></g></g><defs><filter id=\"exp-1794748879098-8-0-drop-shadow\" height=\"130%\" width=\"130%\"><feDropShadow dx=\"4\" dy=\"4\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs><defs><filter id=\"exp-1794748879098-8-0-drop-shadow-small\" height=\"150%\" width=\"150%\"><feDropShadow dx=\"2\" dy=\"2\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs></svg></div>\n<pre><code class=\"language-plaintext hljs\" data-highlighted=\"yes\">R1(config)# access-list 10 deny 172.16.10.0 0.0.0.255\nR1(config)# access-list 10 permit any\nR1(config)# interface g0/2\nR1(config-if)# ip access-group 10 out</code></pre><table>\n<thead>\n<tr>\n<th>Рядок</th>\n<th>Пояснення</th>\n</tr>\n</thead>\n<tbody><tr>\n<td><code>deny 172.16.10.0 ...</code></td>\n<td>🚫 Відкинути пакети від відправників із мережі A</td>\n</tr>\n<tr>\n<td><code>permit any</code></td>\n<td>✅ Усіх інших пропустити (інакше спрацює неявна заборона)</td>\n</tr>\n<tr>\n<td><code>ip access-group 10 out</code></td>\n<td>🚪 Застосувати на виході до сервера, тобто ближче до одержувача</td>\n</tr>\n</tbody></table>\n<div class=\"success\"><strong>✅ Перевірка в Packet Tracer</strong> <p><code>ping 172.16.30.10</code> з комп'ютера мережі A не проходить, з комп'ютера мережі B проходить. При цьому мережі A та B між собою спілкуються без обмежень.</p>\n</div>\n\n","<h1>🧪 Приклад: розширений ACL</h1>\n<p><strong>Завдання (та сама топологія):</strong> заборонити мережі B (172.16.20.0/24) лише доступ за протоколом <strong>HTTP</strong> до сервера 172.16.30.10, решту трафіку дозволити.</p>\n<pre><code class=\"language-plaintext hljs\" data-highlighted=\"yes\">R1(config)# access-list 110 deny tcp 172.16.20.0 0.0.0.255 host 172.16.30.10 eq 80\nR1(config)# access-list 110 permit ip any any\nR1(config)# interface g0/1\nR1(config-if)# ip access-group 110 in</code></pre><p><strong>Як читати перше правило:</strong></p>\n<table>\n<thead>\n<tr>\n<th>Елемент</th>\n<th>Значення</th>\n</tr>\n</thead>\n<tbody><tr>\n<td><code>deny</code></td>\n<td>⚙️ Дія: заборонити</td>\n</tr>\n<tr>\n<td><code>tcp</code></td>\n<td>📦 Протокол</td>\n</tr>\n<tr>\n<td><code>172.16.20.0 0.0.0.255</code></td>\n<td>📤 Відправник: мережа B</td>\n</tr>\n<tr>\n<td><code>host 172.16.30.10</code></td>\n<td>📥 Одержувач: один сервер</td>\n</tr>\n<tr>\n<td><code>eq 80</code></td>\n<td>🔢 Порт одержувача дорівнює 80 (HTTP)</td>\n</tr>\n</tbody></table>\n<div class=\"success\"><strong>✅ Перевірка в Packet Tracer</strong> <p>На комп'ютері мережі B: <code>ping 172.16.30.10</code> проходить, а сторінка <code>http://172.16.30.10</code> у Web Browser не відкривається. Заблоковано один сервіс, а не весь доступ.</p>\n</div>\n\n\n\n\n\n<div class=\"tip\"><strong>💡 Іменований варіант</strong> <p>Той самий список можна створити з іменем: <code>ip access-list extended BLOCK_WEB</code>, далі ввести правила без початкової частини <code>access-list 110</code>, тобто одразу з <code>deny</code> або <code>permit</code>, і застосувати командою <code>ip access-group BLOCK_WEB in</code>.</p>\n</div>\n\n","<h1>🔍 Перевірка та типові помилки</h1>\n<table>\n<thead>\n<tr>\n<th>Команда</th>\n<th>Що показує</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>📋 <code>show access-lists</code></td>\n<td>Усі списки, їхні правила та лічильники збігів (matches)</td>\n</tr>\n<tr>\n<td>🚪 <code>show ip interface g0/1</code></td>\n<td>Чи застосовано ACL до інтерфейсу і в якому напрямку</td>\n</tr>\n<tr>\n<td>📄 <code>show running-config</code></td>\n<td>Повну конфігурацію, зокрема рядки <code>access-list</code> та <code>ip access-group</code></td>\n</tr>\n</tbody></table>\n<div class=\"tip\"><strong>💡 Як шукати несправність</strong> <p>Надішліть тестовий трафік і подивіться на лічильники в <code>show access-lists</code>. Якщо лічильник потрібного правила не зростає, пакети до нього не доходять: або спрацювало правило вище, або список застосовано не там.</p>\n</div>\n\n\n\n\n\n<div class=\"warning\"><strong>⚠️ Типові помилки</strong> <ul>\n<li>🚫 Забули <code>permit</code> наприкінці: неявна заборона блокує весь інший трафік</li>\n<li>🔀 Неправильний порядок: загальне правило стоїть вище за конкретне</li>\n<li>↔️ Переплутали <code>in</code> та <code>out</code> або обрали не той інтерфейс</li>\n<li>🎭 Вказали маску підмережі замість шаблонної</li>\n<li>📝 Створили список, але не застосували його до інтерфейсу</li>\n</ul>\n</div>\n\n\n\n\n\n<div class=\"note\"><strong>📝 Як видалити список</strong> <p>Команда <code>no access-list 10</code> видаляє <strong>весь</strong> список 10, а не одне правило. Перед цим варто зняти його з інтерфейсу: <code>no ip access-group 10 out</code>.</p>\n</div>\n\n","<h1>🧰 Інші види ACL</h1>\n<p><strong>Головна ідея:</strong> Стандартні та розширені списки є статичними: правила діють постійно, доки їх не змінить адміністратор. Для складніших задач існують спеціальні різновиди.</p>\n<table>\n<thead>\n<tr>\n<th>Вид</th>\n<th>Як працює</th>\n<th>Коли корисний</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>🔁 <strong>Рефлексивні</strong></td>\n<td>Маршрутизатор запам'ятовує сеанси, розпочаті зсередини мережі, і пропускає ззовні лише відповіді на них</td>\n<td>Користувачі мають вихід назовні, але ззовні ніхто не може розпочати з'єднання</td>\n</tr>\n<tr>\n<td>🔑 <strong>Динамічні</strong></td>\n<td>Правило з'являється лише після того, як користувач підтвердив свою особу на маршрутизаторі</td>\n<td>Доступ прив'язано до користувача, а не до IP-адреси, яка може змінюватися</td>\n</tr>\n<tr>\n<td>⏰ <strong>Часові</strong></td>\n<td>Правило діє лише у визначені години або дні тижня</td>\n<td>Наприклад, доступ до сервера лише в робочий час</td>\n</tr>\n</tbody></table>\n<div class=\"note\"><strong>📝 На практиці</strong> <p>Найчастіше застосовують стандартні та розширені ACL, саме їх потрібно вміти налаштовувати. Інші різновиди достатньо знати на рівні призначення.</p>\n</div>\n\n","<h1>✅ Ключові висновки</h1>\n<div class=\"success\"><strong>✅ Головне з лекції</strong> <ol>\n<li>🛡️ <strong>ACL</strong> - упорядкований набір правил <code>permit</code> / <code>deny</code>, за якими маршрутизатор фільтрує пакети</li>\n<li>🔄 Правила перевіряються <strong>зверху вниз</strong>, спрацьовує <strong>перший збіг</strong></li>\n<li>🚫 Наприкінці кожного списку діє <strong>неявна заборона</strong> всього, що не було дозволено</li>\n<li>📗 <strong>Стандартний</strong> ACL перевіряє лише адресу відправника, його розміщують ближче до одержувача</li>\n<li>📘 <strong>Розширений</strong> ACL перевіряє відправника, одержувача, протокол і порт, його розміщують ближче до відправника</li>\n<li>🎭 У правилах використовується <strong>шаблонна маска</strong>, обернена до маски підмережі</li>\n<li>🚪 Список починає діяти лише після застосування до інтерфейсу в напрямку <strong>in</strong> або <strong>out</strong></li>\n</ol>\n</div>\n\n","<h1>❓ Контрольні питання</h1>\n<ol>\n<li><p>🤔 Що таке <strong>ACL</strong> і які задачі він вирішує в мережі?</p>\n</li>\n<li><p>🤔 У якому порядку маршрутизатор перевіряє правила списку і що відбувається після першого збігу?</p>\n</li>\n<li><p>🤔 Що таке <strong>неявна заборона</strong> і чому наприкінці списку часто додають <code>permit any</code>?</p>\n</li>\n<li><p>🤔 Чим <strong>стандартний</strong> ACL відрізняється від <strong>розширеного</strong>? Які номери відповідають кожному типу?</p>\n</li>\n<li><p>🤔 Якою буде шаблонна маска для мережі з префіксом /26? Що означають слова <code>host</code> та <code>any</code>?</p>\n</li>\n<li><p>🤔 Чим відрізняються напрямки <strong>in</strong> та <strong>out</strong>? Де рекомендують розміщувати стандартні та розширені списки?</p>\n</li>\n<li><p>🤔 Запишіть правило, яке забороняє мережі 10.5.5.0/24 доступ за протоколом HTTP до сервера 10.9.9.9.</p>\n</li>\n</ol>\n","<h1>📚 Глосарій термінів</h1>\n<table>\n<thead>\n<tr>\n<th>Термін</th>\n<th>English</th>\n<th>Визначення</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>Список контролю доступу</td>\n<td>Access Control List</td>\n<td>Упорядкований набір правил для фільтрації пакетів на маршрутизаторі</td>\n</tr>\n<tr>\n<td>Фільтрація пакетів</td>\n<td>Packet Filtering</td>\n<td>Пропускання або відкидання пакетів за заданими правилами</td>\n</tr>\n<tr>\n<td>Стандартний ACL</td>\n<td>Standard ACL</td>\n<td>Список, що перевіряє лише IP-адресу відправника</td>\n</tr>\n<tr>\n<td>Розширений ACL</td>\n<td>Extended ACL</td>\n<td>Список, що перевіряє адреси відправника й одержувача, протокол і порт</td>\n</tr>\n<tr>\n<td>Іменований ACL</td>\n<td>Named ACL</td>\n<td>Список, позначений іменем замість номера</td>\n</tr>\n<tr>\n<td>Шаблонна маска</td>\n<td>Wildcard Mask</td>\n<td>Маска, що вказує, які біти адреси перевіряти (0) і які ігнорувати (1)</td>\n</tr>\n<tr>\n<td>Неявна заборона</td>\n<td>Implicit Deny</td>\n<td>Невидиме останнє правило, що відкидає всі пакети без збігу</td>\n</tr>\n<tr>\n<td>Вхідний ACL</td>\n<td>Inbound ACL</td>\n<td>Список, що перевіряє пакети на вході в інтерфейс маршрутизатора</td>\n</tr>\n<tr>\n<td>Вихідний ACL</td>\n<td>Outbound ACL</td>\n<td>Список, що перевіряє пакети на виході з інтерфейсу маршрутизатора</td>\n</tr>\n<tr>\n<td>Порт</td>\n<td>Port</td>\n<td>Число, що визначає сервіс на вузлі, якому адресовано дані</td>\n</tr>\n</tbody></table>\n","<h1>🔤 Глосарій абревіатур</h1>\n<table>\n<thead>\n<tr>\n<th>Абревіатура</th>\n<th>Розшифровка</th>\n<th>Переклад</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>ACL</td>\n<td>Access Control List</td>\n<td>Список контролю доступу</td>\n</tr>\n<tr>\n<td>IP</td>\n<td>Internet Protocol</td>\n<td>Міжмережевий протокол</td>\n</tr>\n<tr>\n<td>TCP</td>\n<td>Transmission Control Protocol</td>\n<td>Протокол керування передачею</td>\n</tr>\n<tr>\n<td>UDP</td>\n<td>User Datagram Protocol</td>\n<td>Протокол користувацьких датаграм</td>\n</tr>\n<tr>\n<td>ICMP</td>\n<td>Internet Control Message Protocol</td>\n<td>Протокол керівних повідомлень в Інтернеті</td>\n</tr>\n<tr>\n<td>HTTP</td>\n<td>HyperText Transfer Protocol</td>\n<td>Протокол передачі гіпертексту</td>\n</tr>\n<tr>\n<td>DNS</td>\n<td>Domain Name System</td>\n<td>Система доменних імен</td>\n</tr>\n</tbody></table>\n"];let currentSlideIndex=0;
+function renderMath(root){if(typeof renderMathInElement!=="function"||!root)return;try{renderMathInElement(root,{delimiters:[{left:"$$",right:"$$",display:true},{left:"\\[",right:"\\]",display:true},{left:"$",right:"$",display:false},{left:"\\(",right:"\\)",display:false}],throwOnError:false,strict:"ignore",ignoredTags:["script","noscript","style","textarea","pre","code"]});}catch(e){console.warn("Math render error:",e);}}
+function showSlide(i){if(i<0||i>=slides.length)return;currentSlideIndex=i;const el=document.getElementById("current-slide");el.innerHTML=slides[i];el.scrollTop=0;renderMath(el);document.getElementById("progress-bar").style.width=((i+1)/slides.length*100)+"%";document.getElementById("slide-number").textContent=(i+1)+" / "+slides.length;updateSidebarActive();}
+function nextSlide(){if(currentSlideIndex<slides.length-1)showSlide(currentSlideIndex+1);}
+function previousSlide(){if(currentSlideIndex>0)showSlide(currentSlideIndex-1);}
+function toggleSidebar(){document.getElementById("sidebar").classList.toggle("open");}
+function toggleHelp(){document.getElementById("help-overlay").classList.toggle("hidden");}
+function toggleFullscreen(){if(!document.fullscreenElement){const pc=document.getElementById("presentation-container");if(pc.requestFullscreen)pc.requestFullscreen();else if(pc.webkitRequestFullscreen)pc.webkitRequestFullscreen();else if(pc.msRequestFullscreen)pc.msRequestFullscreen();else if(pc.mozRequestFullScreen)pc.mozRequestFullScreen();}else{if(document.exitFullscreen)document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen();else if(document.msExitFullscreen)document.msExitFullscreen();else if(document.mozCancelFullScreen)document.mozCancelFullScreen();}}
+function generateSidebar(){const sc=document.getElementById("sidebar-content");sc.innerHTML="";slides.forEach((html,idx)=>{const t=document.createElement("div");t.className="slide-thumbnail";if(idx===0)t.classList.add("active");const tmp=document.createElement("div");tmp.innerHTML=html;const title=tmp.querySelector("h1,h2");const titleText=title?title.textContent:("Слайд "+(idx+1));const textContent=tmp.textContent.replace(/s+/g," ").trim();const preview=textContent.substring(0,100)+(textContent.length>100?"...":"");t.innerHTML="<div class=\"slide-thumbnail-number\">"+(idx+1)+"</div><div class=\"slide-thumbnail-title\">"+titleText+"</div><div class=\"slide-thumbnail-content\">"+preview+"</div>";t.onclick=()=>{showSlide(idx);if(window.innerWidth<1024)toggleSidebar();};sc.appendChild(t);});}
+function updateSidebarActive(){document.querySelectorAll(".slide-thumbnail").forEach((th,idx)=>{if(idx===currentSlideIndex){th.classList.add("active");th.scrollIntoView({behavior:"smooth",block:"nearest"});}else th.classList.remove("active");});}
+document.addEventListener("keydown",e=>{switch(e.key){case"ArrowLeft":previousSlide();break;case"ArrowRight":case" ":e.preventDefault();nextSlide();break;case"f":case"F":toggleFullscreen();break;case"s":case"S":toggleSidebar();break;case"?":toggleHelp();break;case"Escape":const sb=document.getElementById("sidebar");const ho=document.getElementById("help-overlay");if(sb.classList.contains("open"))toggleSidebar();else if(!ho.classList.contains("hidden"))ho.classList.add("hidden");break;}});
+generateSidebar();showSlide(0);</script></body></html>
