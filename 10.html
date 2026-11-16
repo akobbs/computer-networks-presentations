@@ -1,0 +1,752 @@
+<!DOCTYPE html><html lang="uk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Мережеві сервіси та прикладні протоколи: DHCP, DNS, HTTP</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><style>:root {
+            --presentation-bg: linear-gradient(135deg, #4f46e5 0%, #312e81 100%);
+            /* Кольори теми - шкали Tailwind CSS, задаються разом із фоном (див. BG_PRESETS / applyBackground):
+               --heading       заголовки h1 (slate-900)
+               --accent        декоративний акцент: лінії, маркери, рамки (500)
+               --accent-2      підзаголовки h2 (700)
+               --accent-strong заливки з білим текстом та дрібний акцентний текст (700)
+               --accent-tint   світлий фон парних рядків і активних елементів (50) */
+            --heading: #0f172a;
+            --accent: #6366f1;
+            --accent-2: #4338ca;
+            --accent-strong: #4338ca;
+            --accent-tint: #eef2ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--presentation-bg);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #editor-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #editor-container.hidden {
+            display: none;
+        }
+
+        #editor-header {
+            background: #2d3748;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #editor-header h2 {
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        #editor-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--accent-strong);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #4a5568;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #2d3748;
+        }
+
+        #markdown-input {
+            flex: 1;
+            padding: 2rem;
+            background: #1a202c;
+            color: #e2e8f0;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: none;
+        }
+
+        #markdown-input:focus {
+            outline: none;
+        }
+
+        .slide-container {
+            position: relative;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+        }
+
+        .slide {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 3rem;
+            position: relative;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .slide::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .slide::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+
+        .slide h1 {
+            color: var(--heading);
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 45%, transparent 100%) left bottom / 100% 4px no-repeat;
+            padding-bottom: 0.5rem;
+        }
+
+        .slide h2 {
+            color: var(--accent-2);
+            font-size: 2rem;
+            margin: 2rem 0 1rem 0;
+        }
+
+        .slide h3 {
+            color: #4a5568;
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .slide p {
+            color: #2d3748;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        .slide ul, .slide ol {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .slide li {
+            color: #2d3748;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 0.5rem;
+        }
+
+        .slide pre {
+            background: #282c34;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        .slide pre code {
+            background: transparent;
+            color: #abb2bf;
+        }
+
+        .slide code {
+            font-family: 'Courier New', Consolas, Monaco, monospace;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .slide h1 code, .slide h2 code, .slide h3 code {
+            font-size: 0.85em;
+            background: rgba(237, 242, 247, 0.5);
+            padding: 0.1em 0.3em;
+            border-radius: 3px;
+        }
+
+        .slide p code {
+            background: #edf2f7;
+            color: #e53e3e;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .slide blockquote {
+            border-left: 4px solid var(--accent);
+            padding-left: 1.5rem;
+            margin: 1.5rem 0;
+            font-style: italic;
+            color: #4a5568;
+        }
+
+        .slide img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .slide table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .slide th, .slide td {
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .slide th {
+            background: var(--accent-strong);
+            color: white;
+            font-weight: 600;
+        }
+
+        .slide tr:nth-child(even) {
+            background: var(--accent-tint);
+        }
+
+        .slide li::marker {
+            color: var(--accent);
+        }
+
+        .note {
+            background: #fff5f5;
+            border-left: 4px solid #fc8181;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .note strong {
+            color: #c53030;
+        }
+
+        .warning {
+            background: #fffaf0;
+            border-left: 4px solid #f6ad55;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .warning strong {
+            color: #c05621;
+        }
+
+        .info {
+            background: #ebf8ff;
+            border-left: 4px solid #4299e1;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .info strong {
+            color: #2c5282;
+        }
+
+        .success {
+            background: #f0fff4;
+            border-left: 4px solid #48bb78;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .success strong {
+            color: #22543d;
+        }
+
+        .danger {
+            background: #fff5f5;
+            border-left: 4px solid #f56565;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .danger strong {
+            color: #742a2a;
+        }
+
+        .tip {
+            background: #fefcbf;
+            border-left: 4px solid #ecc94b;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .tip strong {
+            color: #744210;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: 100;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: white;
+            transition: width 0.3s;
+        }
+
+        .slide-number {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            color: var(--accent-strong);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #sidebar {
+            position: fixed;
+            right: -320px;
+            top: 0;
+            width: 320px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            transition: right 0.3s ease;
+            z-index: 200;
+            padding: 1rem;
+        }
+
+        #sidebar.open {
+            right: 0;
+        }
+
+        #sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+
+        #sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        #sidebar-header h3 {
+            color: var(--accent-strong);
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        #sidebar-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #4a5568;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+
+        #sidebar-close:hover {
+            color: var(--accent-strong);
+        }
+
+        .slide-thumbnail {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            overflow: hidden;
+        }
+
+        .slide-thumbnail:hover {
+            border-color: var(--accent);
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 20%, transparent);
+            transform: translateX(-4px);
+        }
+
+        .slide-thumbnail.active {
+            border-color: var(--accent);
+            background: var(--accent-tint);
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent);
+        }
+
+        .slide-thumbnail-number {
+            display: inline-block;
+            background: var(--accent-strong);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .slide-thumbnail-content {
+            font-size: 0.85rem;
+            color: #2d3748;
+            line-height: 1.4;
+            max-height: 4.2rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slide-thumbnail-content::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 50%;
+            height: 1.4rem;
+            background: linear-gradient(to right, transparent, white);
+        }
+
+        .slide-thumbnail.active .slide-thumbnail-content::after {
+            background: linear-gradient(to right, transparent, var(--accent-tint));
+        }
+
+        .slide-thumbnail-title {
+            font-weight: 600;
+            color: var(--accent-strong);
+            margin-bottom: 0.25rem;
+        }
+
+        #sidebar-toggle {
+            position: fixed;
+            right: 1rem;
+            top: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 8px;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 150;
+        }
+
+        #sidebar-toggle:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+
+        .mermaid {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+            overflow: visible; /* щоб не обрізати тіні / розширені ноди */
+        }
+
+        /* Запобігаємо обрізанню останньої літери в нодах Mermaid через зміну font-weight після розрахунку розміру */
+        .mermaid svg { overflow: visible !important; }
+        /* перестраховка проти обрізання foreignObject (на випадок інших діаграм) */
+        .mermaid svg foreignObject { overflow: visible !important; }
+
+        /* Ізоляція підписів Mermaid від типографіки слайду.
+           Mermaid рендерить підписи як HTML (<p>, <li>, <code>) всередині foreignObject і міряє їх
+           без стилів слайду. Без цього скидання правила .slide p / .slide li збільшують шрифт
+           і міжрядковий інтервал уже після розрахунку розмірів - і текст вилазить за межі блоків. */
+        .mermaid svg p,
+        .mermaid svg li,
+        .mermaid svg ul,
+        .mermaid svg ol {
+            font-size: inherit;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+            color: inherit;
+        }
+        .mermaid svg code {
+            font-size: inherit;
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        .plantuml-diagram {
+            max-width: 100%;
+            height: auto;
+            margin: 1.5rem auto;
+            display: block;
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #help-overlay {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+            transition: opacity 0.3s;
+        }
+
+        #help-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #help-overlay kbd {
+            background: #2d3748;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+
+        .mermaid-error {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            padding: 1rem;
+            border-radius: 6px;
+            color: #742a2a;
+            margin: 1.5rem 0;
+        }
+
+        .mermaid-error pre {
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            white-space: pre-wrap;
+        }
+
+        /* Вибір фону презентації */
+        #bg-picker {
+            position: fixed;
+            bottom: 6rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(360px, calc(100vw - 2rem));
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            padding: 1rem 1.1rem 1.1rem;
+            z-index: 160;
+            color: #2d3748;
+        }
+
+        #bg-picker.hidden {
+            display: none;
+        }
+
+        #bg-picker h4 {
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .bg-swatches {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+        }
+
+        .bg-swatch {
+            aspect-ratio: 16 / 10;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+            transition: transform 0.15s;
+        }
+
+        /* Мініатюра теми: фон + маленька «картка слайду» з акцентною лінією */
+        .bg-swatch {
+            position: relative;
+        }
+
+        .bg-swatch::after {
+            content: '';
+            position: absolute;
+            left: 22%;
+            right: 22%;
+            top: 30%;
+            bottom: 30%;
+            border-radius: 3px;
+            background:
+                linear-gradient(90deg, var(--sw-accent), transparent) 18% 38% / 55% 3px no-repeat,
+                white;
+        }
+
+        .bg-swatch:hover {
+            transform: scale(1.06);
+        }
+
+        .bg-swatch.active {
+            border-color: #2d3748;
+            box-shadow: 0 0 0 2px white inset;
+        }
+
+        .bg-custom {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .bg-custom input[type="color"] {
+            width: 38px;
+            height: 30px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 2px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .bg-custom .bg-hint {
+            color: #718096;
+            font-size: 0.75rem;
+            width: 100%;
+        }
+
+        /* Повноекранний режим - зберігаємо обраний фон */
+        #presentation-container:fullscreen {
+            background: var(--presentation-bg);
+        }
+
+        #presentation-container:-webkit-full-screen {
+            background: var(--presentation-bg);
+        }
+
+        #presentation-container:-moz-full-screen {
+            background: var(--presentation-bg);
+        }
+
+        #presentation-container:-ms-fullscreen {
+            background: var(--presentation-bg);
+        }
+#presentation-container:fullscreen,#presentation-container:-webkit-full-screen,#presentation-container:-moz-full-screen,#presentation-container:-ms-fullscreen{background:var(--presentation-bg)!important;}:root{--presentation-bg:linear-gradient(135deg, #0d9488 0%, #134e4a 100%);--heading:#0f172a;--accent:#14b8a6;--accent-2:#0f766e;--accent-strong:#0f766e;--accent-tint:#f0fdfa;}</style></head><body><div id="presentation-container"><div class="progress"><div class="progress-bar" id="progress-bar"></div></div><button id="sidebar-toggle" onclick="toggleSidebar()" title="Навігація слайдами (S)">☰</button><div id="sidebar"><div id="sidebar-header"><h3>📑 Слайди</h3><button id="sidebar-close" onclick="toggleSidebar()">✕</button></div><div id="sidebar-content"></div></div><div class="slide-container"><div class="slide" id="current-slide"></div></div><div class="controls"><button class="control-btn" onclick="previousSlide()" title="Попередній (←)">←</button><button class="control-btn" onclick="nextSlide()" title="Наступний (→)">→</button><button class="control-btn" onclick="toggleFullscreen()" title="Повноекранний режим (F)">⛶</button><button class="control-btn" onclick="toggleHelp()" title="Допомога (?)">?</button></div><div class="slide-number" id="slide-number">1 / 20</div><div id="help-overlay" class="hidden"><strong>Гарячі клавіші:</strong><br><kbd>←</kbd> <kbd>→</kbd> Навігація<br><kbd>F</kbd> Повноекранний режим<br><kbd>S</kbd> Sidebar<br><kbd>?</kbd> Допомога<br><kbd>Esc</kbd> Закрити</div></div><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script><script>const slides=["<h1>Мережеві сервіси та прикладні протоколи: DHCP, DNS, HTTP</h1>\n<p><strong>Курс:</strong> Організація комп'ютерних мереж / Комп'ютерні мережі</p>\n<p><strong>Лектор:</strong> Кобилянський Антон</p>\n","<h1>📋 План лекції</h1>\n<ol>\n<li>🧩 Мережеві сервіси та модель \"клієнт-сервер\"</li>\n<li>🏷️ DHCP: автоматичне налаштування вузлів</li>\n<li>📖 DNS: перетворення імен на IP-адреси</li>\n<li>🌐 HTTP: передавання вебсторінок</li>\n<li>🔒 HTTPS: захищений варіант HTTP</li>\n<li>🔗 Як три сервіси працюють разом</li>\n<li>📝 Висновки, контрольні питання, глосарій</li>\n</ol>\n","<h1>🧩 Мережеві сервіси та модель \"клієнт-сервер\"</h1>\n<div class=\"info\"><strong>ℹ️ Визначення</strong> <p><strong>Мережевий сервіс</strong> - програма, що працює на вузлі мережі та надає іншим вузлам певну послугу: видає адреси, знаходить IP-адресу за іменем, віддає вебсторінки.</p>\n</div>\n\n\n\n<p><strong>Головна ідея:</strong> Усі три сервіси лекції працюють на прикладному рівні за однією схемою: <strong>клієнт</strong> надсилає запит, <strong>сервер</strong> повертає відповідь.</p>\n<table>\n<thead>\n<tr>\n<th>Сервіс</th>\n<th>Яку задачу вирішує</th>\n<th>Транспорт</th>\n<th>Порт сервера</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>🏷️ <strong>DHCP</strong></td>\n<td>Автоматично видає вузлу мережеві налаштування</td>\n<td>UDP</td>\n<td>67</td>\n</tr>\n<tr>\n<td>📖 <strong>DNS</strong></td>\n<td>Знаходить IP-адресу за доменним іменем</td>\n<td>UDP, рідше TCP</td>\n<td>53</td>\n</tr>\n<tr>\n<td>🌐 <strong>HTTP</strong></td>\n<td>Передає вебсторінки та дані між застосунками</td>\n<td>TCP</td>\n<td>80</td>\n</tr>\n<tr>\n<td>🔒 <strong>HTTPS</strong></td>\n<td>Те саме, що HTTP, але із шифруванням</td>\n<td>TCP</td>\n<td>443</td>\n</tr>\n</tbody></table>\n<div class=\"note\"><strong>📝 Навіщо потрібен номер порту</strong> <p>IP-адреса визначає <strong>вузол</strong>, а порт визначає <strong>програму</strong> на цьому вузлі. На одному сервері можуть одночасно працювати і DNS, і вебсервер: запит на порт 53 отримає перший, запит на порт 80 отримає другий.</p>\n</div>\n\n","<h1>🏷️ DHCP: навіщо він потрібен</h1>\n<div class=\"info\"><strong>ℹ️ Визначення</strong> <p><strong>DHCP</strong> (Dynamic Host Configuration Protocol / Протокол динамічного налаштування вузла) - протокол, за яким вузол автоматично отримує від сервера параметри для роботи в мережі.</p>\n</div>\n\n\n\n<p><strong>Головна ідея:</strong> Щоб вузол міг працювати в мережі, йому потрібні чотири параметри. Без DHCP адміністратор вводить їх вручну на кожному пристрої.</p>\n<table>\n<thead>\n<tr>\n<th>Параметр</th>\n<th>Для чого потрібен</th>\n<th>Приклад</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>🔢 <strong>IP-адреса</strong></td>\n<td>Унікальна адреса вузла в мережі</td>\n<td>192.168.50.11</td>\n</tr>\n<tr>\n<td>🎭 <strong>Маска підмережі</strong></td>\n<td>Визначає межі власної мережі</td>\n<td>255.255.255.0</td>\n</tr>\n<tr>\n<td>🚪 <strong>Шлюз за замовчуванням</strong></td>\n<td>Маршрутизатор для виходу в інші мережі</td>\n<td>192.168.50.1</td>\n</tr>\n<tr>\n<td>📖 <strong>DNS-сервер</strong></td>\n<td>Куди звертатися за перетворенням імен</td>\n<td>192.168.50.5</td>\n</tr>\n</tbody></table>\n<table>\n<thead>\n<tr>\n<th>✋ Ручне (статичне) налаштування</th>\n<th>🤖 Налаштування через DHCP</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>Адреси вводяться на кожному вузлі</td>\n<td>Адреси видає сервер</td>\n</tr>\n<tr>\n<td>Можливі помилки та дублікати адрес</td>\n<td>Сервер стежить, щоб адреси не повторювалися</td>\n</tr>\n<tr>\n<td>Доречне для серверів, маршрутизаторів</td>\n<td>Доречне для комп'ютерів, ноутбуків, смартфонів</td>\n</tr>\n</tbody></table>\n","<h1>🤝 DHCP: отримання адреси за чотири кроки</h1>\n<p><strong>Головна ідея:</strong> Клієнт і сервер обмінюються чотирма повідомленнями. За першими літерами їхніх назв процес називають <strong>DORA</strong>.</p>\n\n<div class=\"mermaid\" data-source=\"graph LR\n    A[1️⃣ Discover] --&gt; B[2️⃣ Offer]\n    B --&gt; C[3️⃣ Request]\n    C --&gt; D[4️⃣ Ack]\n    style A fill:#e3f2fd,stroke:#1565c0\n    style B fill:#e8f5e9,stroke:#388e3c\n    style C fill:#e3f2fd,stroke:#1565c0\n    style D fill:#e8f5e9,stroke:#388e3c\"><svg id=\"exp-1794854903834-4-0\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" class=\"flowchart\" style=\"max-width: 641.671875px;\" viewBox=\"0 0 641.671875 64\" role=\"graphics-document document\" aria-roledescription=\"flowchart-v2\"><style>#exp-1794854903834-4-0{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#exp-1794854903834-4-0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#exp-1794854903834-4-0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#exp-1794854903834-4-0 .error-icon{fill:#552222;}#exp-1794854903834-4-0 .error-text{fill:#552222;stroke:#552222;}#exp-1794854903834-4-0 .edge-thickness-normal{stroke-width:1px;}#exp-1794854903834-4-0 .edge-thickness-thick{stroke-width:3.5px;}#exp-1794854903834-4-0 .edge-pattern-solid{stroke-dasharray:0;}#exp-1794854903834-4-0 .edge-thickness-invisible{stroke-width:0;fill:none;}#exp-1794854903834-4-0 .edge-pattern-dashed{stroke-dasharray:3;}#exp-1794854903834-4-0 .edge-pattern-dotted{stroke-dasharray:2;}#exp-1794854903834-4-0 .marker{fill:#333333;stroke:#333333;}#exp-1794854903834-4-0 .marker.cross{stroke:#333333;}#exp-1794854903834-4-0 svg{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;}#exp-1794854903834-4-0 p{margin:0;}#exp-1794854903834-4-0 .label{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;color:#333;}#exp-1794854903834-4-0 .cluster-label text{fill:#333;}#exp-1794854903834-4-0 .cluster-label span{color:#333;}#exp-1794854903834-4-0 .cluster-label span p{background-color:transparent;}#exp-1794854903834-4-0 .label text,#exp-1794854903834-4-0 span{fill:#333;color:#333;}#exp-1794854903834-4-0 .node rect,#exp-1794854903834-4-0 .node circle,#exp-1794854903834-4-0 .node ellipse,#exp-1794854903834-4-0 .node polygon,#exp-1794854903834-4-0 .node path{fill:#ECECFF;stroke:#667eea;stroke-width:1px;}#exp-1794854903834-4-0 .rough-node .label text,#exp-1794854903834-4-0 .node .label text,#exp-1794854903834-4-0 .image-shape .label,#exp-1794854903834-4-0 .icon-shape .label{text-anchor:middle;}#exp-1794854903834-4-0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#exp-1794854903834-4-0 .rough-node .label,#exp-1794854903834-4-0 .node .label,#exp-1794854903834-4-0 .image-shape .label,#exp-1794854903834-4-0 .icon-shape .label{text-align:center;}#exp-1794854903834-4-0 .node.clickable{cursor:pointer;}#exp-1794854903834-4-0 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#exp-1794854903834-4-0 .arrowheadPath{fill:#333333;}#exp-1794854903834-4-0 .edgePaths .path{stroke:#333333;stroke-width:1px;}#exp-1794854903834-4-0 .flowchart-link{stroke:#333333;fill:none;}#exp-1794854903834-4-0 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1794854903834-4-0 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#exp-1794854903834-4-0 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1794854903834-4-0 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#exp-1794854903834-4-0 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#exp-1794854903834-4-0 .cluster text{fill:#333;}#exp-1794854903834-4-0 .cluster span{color:#333;}#exp-1794854903834-4-0 .node .collapsed-indicator{fill:#aaaa33;stroke:none;opacity:0.6;}#exp-1794854903834-4-0 .node .collapsed-separator{stroke:#aaaa33;stroke-width:0.75px;}#exp-1794854903834-4-0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#exp-1794854903834-4-0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#exp-1794854903834-4-0 rect.text{fill:none;stroke-width:0;}#exp-1794854903834-4-0 .icon-shape,#exp-1794854903834-4-0 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1794854903834-4-0 .icon-shape p,#exp-1794854903834-4-0 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#exp-1794854903834-4-0 .icon-shape .label rect,#exp-1794854903834-4-0 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1794854903834-4-0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#exp-1794854903834-4-0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#exp-1794854903834-4-0 .node .neo-node{stroke:#667eea;}#exp-1794854903834-4-0 [data-look=\"neo\"].node rect,#exp-1794854903834-4-0 [data-look=\"neo\"].cluster rect,#exp-1794854903834-4-0 [data-look=\"neo\"].node polygon{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903834-4-0 [data-look=\"neo\"].swimlane.cluster rect{filter:none;}#exp-1794854903834-4-0 [data-look=\"neo\"].node path{stroke:#667eea;stroke-width:1px;}#exp-1794854903834-4-0 [data-look=\"neo\"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903834-4-0 [data-look=\"neo\"].node .neo-line path{stroke:#667eea;filter:none;}#exp-1794854903834-4-0 [data-look=\"neo\"].node circle{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903834-4-0 [data-look=\"neo\"].node circle .state-start{fill:#000000;}#exp-1794854903834-4-0 [data-look=\"neo\"].icon-shape .icon{fill:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903834-4-0 [data-look=\"neo\"].icon-shape .icon-neo path{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903834-4-0 :root{--mermaid-font-family:\"trebuchet ms\",verdana,arial,sans-serif;}</style><g><marker id=\"exp-1794854903834-4-0_flowchart-v2-pointEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 0 L 10 5 L 0 10 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903834-4-0_flowchart-v2-pointStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"4.5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 5 L 10 10 L 10 0 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903834-4-0_flowchart-v2-pointEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"11.5\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"10.5\" markerHeight=\"14\" orient=\"auto\"><path d=\"M 0 0 L 11.5 7 L 0 14 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903834-4-0_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></polygon></marker><marker id=\"exp-1794854903834-4-0_flowchart-v2-circleEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"11\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903834-4-0_flowchart-v2-circleStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-1\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903834-4-0_flowchart-v2-circleEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refY=\"5\" refX=\"12.25\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903834-4-0_flowchart-v2-circleStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-2\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903834-4-0_flowchart-v2-crossEnd\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"12\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903834-4-0_flowchart-v2-crossStart\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"-1\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903834-4-0_flowchart-v2-crossEnd-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"17.7\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5;\"></path></marker><marker id=\"exp-1794854903834-4-0_flowchart-v2-crossStart-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"-3.5\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5; stroke-dasharray: 1, 0;\"></path></marker><g class=\"root\"><g class=\"clusters\"></g><g class=\"edgePaths\"><path d=\"M143.328,32L147.495,32C151.661,32,159.995,32,167.661,32C175.328,32,182.328,32,185.828,32L189.328,32\" id=\"exp-1794854903834-4-0-L_A_B_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_A_B_0\" data-points=\"W3sieCI6MTQzLjMyODEyNSwieSI6MzJ9LHsieCI6MTY4LjMyODEyNSwieSI6MzJ9LHsieCI6MTkzLjMyODEyNSwieSI6MzJ9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1794854903834-4-0_flowchart-v2-pointEnd)\"></path><path d=\"M302.766,32L306.932,32C311.099,32,319.432,32,327.099,32C334.766,32,341.766,32,345.266,32L348.766,32\" id=\"exp-1794854903834-4-0-L_B_C_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_B_C_0\" data-points=\"W3sieCI6MzAyLjc2NTYyNSwieSI6MzJ9LHsieCI6MzI3Ljc2NTYyNSwieSI6MzJ9LHsieCI6MzUyLjc2NTYyNSwieSI6MzJ9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1794854903834-4-0_flowchart-v2-pointEnd)\"></path><path d=\"M484.469,32L488.635,32C492.802,32,501.135,32,508.802,32C516.469,32,523.469,32,526.969,32L530.469,32\" id=\"exp-1794854903834-4-0-L_C_D_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_C_D_0\" data-points=\"W3sieCI6NDg0LjQ2ODc1LCJ5IjozMn0seyJ4Ijo1MDkuNDY4NzUsInkiOjMyfSx7IngiOjUzNC40Njg3NSwieSI6MzJ9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1794854903834-4-0_flowchart-v2-pointEnd)\"></path></g><g class=\"edgeLabels\"><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_A_B_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_B_C_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_C_D_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g></g><g class=\"nodes\"><g class=\"node default  \" id=\"exp-1794854903834-4-0-flowchart-A-0\" data-look=\"classic\" transform=\"translate(75.6640625, 32)\"><rect class=\"basic label-container\" style=\"fill:#e3f2fd !important;stroke:#1565c0 !important\" x=\"-67.6640625\" y=\"-24\" width=\"135.328125\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-43.6640625, -12)\"><rect></rect><foreignObject width=\"87.328125\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>1️⃣ Discover</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903834-4-0-flowchart-B-1\" data-look=\"classic\" transform=\"translate(248.046875, 32)\"><rect class=\"basic label-container\" style=\"fill:#e8f5e9 !important;stroke:#388e3c !important\" x=\"-54.71875\" y=\"-24\" width=\"109.4375\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-30.71875, -12)\"><rect></rect><foreignObject width=\"61.4375\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>2️⃣ Offer</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903834-4-0-flowchart-C-3\" data-look=\"classic\" transform=\"translate(418.6171875, 32)\"><rect class=\"basic label-container\" style=\"fill:#e3f2fd !important;stroke:#1565c0 !important\" x=\"-65.8515625\" y=\"-24\" width=\"131.703125\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-41.8515625, -12)\"><rect></rect><foreignObject width=\"83.703125\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>3️⃣ Request</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903834-4-0-flowchart-D-5\" data-look=\"classic\" transform=\"translate(584.0703125, 32)\"><rect class=\"basic label-container\" style=\"fill:#e8f5e9 !important;stroke:#388e3c !important\" x=\"-49.6015625\" y=\"-24\" width=\"99.203125\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-25.6015625, -12)\"><rect></rect><foreignObject width=\"51.203125\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>4️⃣ Ack</p></span></div></foreignObject></g></g></g></g></g><defs><filter id=\"exp-1794854903834-4-0-drop-shadow\" height=\"130%\" width=\"130%\"><feDropShadow dx=\"4\" dy=\"4\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs><defs><filter id=\"exp-1794854903834-4-0-drop-shadow-small\" height=\"150%\" width=\"150%\"><feDropShadow dx=\"2\" dy=\"2\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs></svg></div>\n<table>\n<thead>\n<tr>\n<th>Крок</th>\n<th>Хто кому</th>\n<th>Зміст повідомлення</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>1️⃣ <strong>Discover</strong></td>\n<td>💻 Клієнт → усім вузлам</td>\n<td>\"Чи є в мережі DHCP-сервер?\"</td>\n</tr>\n<tr>\n<td>2️⃣ <strong>Offer</strong></td>\n<td>🖥️ Сервер → клієнту</td>\n<td>\"Пропоную адресу 192.168.50.11\"</td>\n</tr>\n<tr>\n<td>3️⃣ <strong>Request</strong></td>\n<td>💻 Клієнт → усім вузлам</td>\n<td>\"Приймаю адресу 192.168.50.11\"</td>\n</tr>\n<tr>\n<td>4️⃣ <strong>Acknowledge</strong></td>\n<td>🖥️ Сервер → клієнту</td>\n<td>\"Підтверджую. Маска, шлюз і DNS додаються\"</td>\n</tr>\n</tbody></table>\n<div class=\"note\"><strong>📝 Чому запит надсилається всім вузлам</strong> <p>На початку клієнт не має власної IP-адреси і не знає адреси сервера. Тому він надсилає широкомовне повідомлення, яке отримують усі вузли мережі, а відповідає на нього лише DHCP-сервер. Повідомлення Request теж широкомовне: якщо адресу запропонували кілька серверів, усі вони дізнаються, чию пропозицію прийнято.</p>\n</div>\n\n\n\n\n\n<div class=\"warning\"><strong>⚠️ Обмеження</strong> <p>Широкомовні повідомлення не проходять через маршрутизатор. DHCP-сервер має бути в тій самій мережі, що й клієнти, або маршрутизатор має бути налаштований пересилати такі запити серверу.</p>\n</div>\n\n","<h1>⏳ DHCP: пул адрес та оренда</h1>\n<div class=\"info\"><strong>ℹ️ Визначення</strong> <p><strong>Пул адрес</strong> - діапазон IP-адрес, які сервер може видавати клієнтам.<br><strong>Оренда</strong> (lease) - видача адреси на обмежений час, після якого клієнт має її продовжити.</p>\n</div>\n\n\n\n<p><strong>Як це працює:</strong></p>\n<ul>\n<li>📦 Сервер видає адреси лише з пулу, наприклад 192.168.50.11 - 192.168.50.254</li>\n<li>🚫 Адреси маршрутизатора та серверів <strong>виключають</strong> із пулу, бо вони задані статично</li>\n<li>⏳ Адреса видається на певний строк, наприклад на 24 години</li>\n<li>🔄 Коли минає половина строку, клієнт автоматично просить продовжити оренду</li>\n<li>♻️ Якщо пристрій залишив мережу, після завершення оренди його адреса повертається в пул</li>\n</ul>\n<div class=\"tip\"><strong>💡 Діагностика у Windows</strong> <ul>\n<li><code>ipconfig /all</code> показує отриману адресу, шлюз, DNS-сервер і строк оренди</li>\n<li><code>ipconfig /release</code> звільняє адресу, <code>ipconfig /renew</code> запитує її знову</li>\n</ul>\n</div>\n\n\n\n\n\n<div class=\"warning\"><strong>⚠️ Типова несправність</strong> <p>Якщо комп'ютер з Windows має адресу виду <strong>169.254.x.x</strong>, він не отримав відповіді від DHCP-сервера і призначив собі адресу самостійно. З такою адресою вихід в інші мережі неможливий. Перевірте кабель, сервер і налаштування пулу.</p>\n</div>\n\n","<h1>🛠️ DHCP: налаштування на маршрутизаторі Cisco</h1>\n<p><strong>Задача:</strong> маршрутизатор з адресою 192.168.50.1 має роздавати адреси вузлам мережі 192.168.50.0/24.</p>\n<pre><code class=\"language-plaintext hljs\" data-highlighted=\"yes\">Router(config)# ip dhcp excluded-address 192.168.50.1 192.168.50.10\nRouter(config)# ip dhcp pool OFFICE\nRouter(dhcp-config)# network 192.168.50.0 255.255.255.0\nRouter(dhcp-config)# default-router 192.168.50.1\nRouter(dhcp-config)# dns-server 192.168.50.5</code></pre><table>\n<thead>\n<tr>\n<th>Команда</th>\n<th>Що вона робить</th>\n</tr>\n</thead>\n<tbody><tr>\n<td><code>ip dhcp excluded-address</code></td>\n<td>Виключає з роздачі адреси .1 - .10 (шлюз, сервери)</td>\n</tr>\n<tr>\n<td><code>ip dhcp pool OFFICE</code></td>\n<td>Створює пул з назвою OFFICE</td>\n</tr>\n<tr>\n<td><code>network</code></td>\n<td>Задає мережу, з якої видаються адреси</td>\n</tr>\n<tr>\n<td><code>default-router</code></td>\n<td>Адреса шлюзу, яку отримають клієнти</td>\n</tr>\n<tr>\n<td><code>dns-server</code></td>\n<td>Адреса DNS-сервера, яку отримають клієнти</td>\n</tr>\n</tbody></table>\n<div class=\"tip\"><strong>💡 Перевірка в Packet Tracer</strong> <ul>\n<li>На комп'ютері: <strong>Desktop → IP Configuration → DHCP</strong>, адреса має з'явитися автоматично</li>\n<li>На маршрутизаторі: <code>show ip dhcp binding</code> показує, які адреси кому видано</li>\n</ul>\n</div>\n\n","<h1>📖 DNS: навіщо він потрібен</h1>\n<div class=\"info\"><strong>ℹ️ Визначення</strong> <p><strong>DNS</strong> (Domain Name System / Система доменних імен) - сервіс, який за доменним іменем повертає відповідну IP-адресу.</p>\n</div>\n\n\n\n<p><strong>Головна ідея:</strong> Вузли в мережі знаходять один одного лише за IP-адресами. Людям зручніше користуватися іменами. DNS поєднує ці два способи.</p>\n<table>\n<thead>\n<tr>\n<th>👤 Що вводить користувач</th>\n<th>💻 Що потрібно комп'ютеру</th>\n</tr>\n</thead>\n<tbody><tr>\n<td><code>www.site.ua</code></td>\n<td><code>203.0.113.10</code></td>\n</tr>\n</tbody></table>\n<p><strong>Що дає DNS:</strong></p>\n<ul>\n<li>🧠 Не потрібно пам'ятати числові адреси</li>\n<li>🔄 Сервер можна перенести на іншу IP-адресу, а ім'я для користувачів залишиться тим самим</li>\n<li>🌍 Це розподілена система: немає одного сервера, який знає всі імена світу</li>\n</ul>\n<div class=\"note\"><strong>📝 Без DNS мережа працює, але незручно</strong> <p>Якщо DNS-сервер недоступний, зв'язок за IP-адресами зберігається: <code>ping 203.0.113.10</code> проходить, а <code>ping www.site.ua</code> ні. Така різниця одразу вказує на проблему з DNS, а не з мережею.</p>\n</div>\n\n","<h1>🌳 DNS: будова доменного імені</h1>\n<p><strong>Головна ідея:</strong> Простір імен має структуру дерева. Доменне ім'я читається <strong>справа наліво</strong>: від загального рівня до конкретного вузла.</p>\n\n<div class=\"mermaid\" data-source=\"graph TD\n    R[🌐 Корінь] --&gt; UA[.ua]\n    R --&gt; COM[.com]\n    R --&gt; ORG[.org]\n    UA --&gt; SITE[site.ua]\n    UA --&gt; EDU[edu.ua]\n    SITE --&gt; WWW[www.site.ua]\n    SITE --&gt; MAIL[mail.site.ua]\n    style R fill:#f3e5f5,stroke:#7b1fa2\n    style UA fill:#e3f2fd,stroke:#1565c0\n    style COM fill:#e3f2fd,stroke:#1565c0\n    style ORG fill:#e3f2fd,stroke:#1565c0\n    style SITE fill:#e8f5e9,stroke:#388e3c\n    style EDU fill:#e8f5e9,stroke:#388e3c\n    style WWW fill:#fff9c4,stroke:#f9a825\n    style MAIL fill:#fff9c4,stroke:#f9a825\"><svg id=\"exp-1794854903850-8-0\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" class=\"flowchart\" style=\"max-width: 543.06640625px;\" viewBox=\"0 0 543.06640625 358\" role=\"graphics-document document\" aria-roledescription=\"flowchart-v2\"><style>#exp-1794854903850-8-0{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#exp-1794854903850-8-0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#exp-1794854903850-8-0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#exp-1794854903850-8-0 .error-icon{fill:#552222;}#exp-1794854903850-8-0 .error-text{fill:#552222;stroke:#552222;}#exp-1794854903850-8-0 .edge-thickness-normal{stroke-width:1px;}#exp-1794854903850-8-0 .edge-thickness-thick{stroke-width:3.5px;}#exp-1794854903850-8-0 .edge-pattern-solid{stroke-dasharray:0;}#exp-1794854903850-8-0 .edge-thickness-invisible{stroke-width:0;fill:none;}#exp-1794854903850-8-0 .edge-pattern-dashed{stroke-dasharray:3;}#exp-1794854903850-8-0 .edge-pattern-dotted{stroke-dasharray:2;}#exp-1794854903850-8-0 .marker{fill:#333333;stroke:#333333;}#exp-1794854903850-8-0 .marker.cross{stroke:#333333;}#exp-1794854903850-8-0 svg{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;}#exp-1794854903850-8-0 p{margin:0;}#exp-1794854903850-8-0 .label{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;color:#333;}#exp-1794854903850-8-0 .cluster-label text{fill:#333;}#exp-1794854903850-8-0 .cluster-label span{color:#333;}#exp-1794854903850-8-0 .cluster-label span p{background-color:transparent;}#exp-1794854903850-8-0 .label text,#exp-1794854903850-8-0 span{fill:#333;color:#333;}#exp-1794854903850-8-0 .node rect,#exp-1794854903850-8-0 .node circle,#exp-1794854903850-8-0 .node ellipse,#exp-1794854903850-8-0 .node polygon,#exp-1794854903850-8-0 .node path{fill:#ECECFF;stroke:#667eea;stroke-width:1px;}#exp-1794854903850-8-0 .rough-node .label text,#exp-1794854903850-8-0 .node .label text,#exp-1794854903850-8-0 .image-shape .label,#exp-1794854903850-8-0 .icon-shape .label{text-anchor:middle;}#exp-1794854903850-8-0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#exp-1794854903850-8-0 .rough-node .label,#exp-1794854903850-8-0 .node .label,#exp-1794854903850-8-0 .image-shape .label,#exp-1794854903850-8-0 .icon-shape .label{text-align:center;}#exp-1794854903850-8-0 .node.clickable{cursor:pointer;}#exp-1794854903850-8-0 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#exp-1794854903850-8-0 .arrowheadPath{fill:#333333;}#exp-1794854903850-8-0 .edgePaths .path{stroke:#333333;stroke-width:1px;}#exp-1794854903850-8-0 .flowchart-link{stroke:#333333;fill:none;}#exp-1794854903850-8-0 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1794854903850-8-0 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#exp-1794854903850-8-0 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1794854903850-8-0 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#exp-1794854903850-8-0 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#exp-1794854903850-8-0 .cluster text{fill:#333;}#exp-1794854903850-8-0 .cluster span{color:#333;}#exp-1794854903850-8-0 .node .collapsed-indicator{fill:#aaaa33;stroke:none;opacity:0.6;}#exp-1794854903850-8-0 .node .collapsed-separator{stroke:#aaaa33;stroke-width:0.75px;}#exp-1794854903850-8-0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#exp-1794854903850-8-0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#exp-1794854903850-8-0 rect.text{fill:none;stroke-width:0;}#exp-1794854903850-8-0 .icon-shape,#exp-1794854903850-8-0 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1794854903850-8-0 .icon-shape p,#exp-1794854903850-8-0 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#exp-1794854903850-8-0 .icon-shape .label rect,#exp-1794854903850-8-0 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1794854903850-8-0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#exp-1794854903850-8-0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#exp-1794854903850-8-0 .node .neo-node{stroke:#667eea;}#exp-1794854903850-8-0 [data-look=\"neo\"].node rect,#exp-1794854903850-8-0 [data-look=\"neo\"].cluster rect,#exp-1794854903850-8-0 [data-look=\"neo\"].node polygon{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903850-8-0 [data-look=\"neo\"].swimlane.cluster rect{filter:none;}#exp-1794854903850-8-0 [data-look=\"neo\"].node path{stroke:#667eea;stroke-width:1px;}#exp-1794854903850-8-0 [data-look=\"neo\"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903850-8-0 [data-look=\"neo\"].node .neo-line path{stroke:#667eea;filter:none;}#exp-1794854903850-8-0 [data-look=\"neo\"].node circle{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903850-8-0 [data-look=\"neo\"].node circle .state-start{fill:#000000;}#exp-1794854903850-8-0 [data-look=\"neo\"].icon-shape .icon{fill:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903850-8-0 [data-look=\"neo\"].icon-shape .icon-neo path{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903850-8-0 :root{--mermaid-font-family:\"trebuchet ms\",verdana,arial,sans-serif;}</style><g><marker id=\"exp-1794854903850-8-0_flowchart-v2-pointEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 0 L 10 5 L 0 10 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903850-8-0_flowchart-v2-pointStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"4.5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 5 L 10 10 L 10 0 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903850-8-0_flowchart-v2-pointEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"11.5\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"10.5\" markerHeight=\"14\" orient=\"auto\"><path d=\"M 0 0 L 11.5 7 L 0 14 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903850-8-0_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></polygon></marker><marker id=\"exp-1794854903850-8-0_flowchart-v2-circleEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"11\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903850-8-0_flowchart-v2-circleStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-1\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903850-8-0_flowchart-v2-circleEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refY=\"5\" refX=\"12.25\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903850-8-0_flowchart-v2-circleStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-2\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903850-8-0_flowchart-v2-crossEnd\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"12\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903850-8-0_flowchart-v2-crossStart\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"-1\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903850-8-0_flowchart-v2-crossEnd-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"17.7\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5;\"></path></marker><marker id=\"exp-1794854903850-8-0_flowchart-v2-crossStart-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"-3.5\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5; stroke-dasharray: 1, 0;\"></path></marker><g class=\"root\"><g class=\"clusters\"></g><g class=\"edgePaths\"><path d=\"M306.168,55.54L295.191,59.783C284.215,64.026,262.262,72.513,251.285,80.257C240.309,88,240.309,95,240.309,98.5L240.309,102\" id=\"exp-1794854903850-8-0-L_R_UA_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_R_UA_0\" data-points=\"W3sieCI6MzA2LjE2Nzk2ODc1LCJ5Ijo1NS41Mzk1NzEwMDU5MTcxNn0seyJ4IjoyNDAuMzA4NTkzNzUsInkiOjgxfSx7IngiOjI0MC4zMDg1OTM3NSwieSI6MTA2fV0=\" data-look=\"classic\" marker-end=\"url(#exp-1794854903850-8-0_flowchart-v2-pointEnd)\"></path><path d=\"M367.059,56L367.059,60.167C367.059,64.333,367.059,72.667,367.059,80.333C367.059,88,367.059,95,367.059,98.5L367.059,102\" id=\"exp-1794854903850-8-0-L_R_COM_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_R_COM_0\" data-points=\"W3sieCI6MzY3LjA1ODU5Mzc1LCJ5Ijo1Nn0seyJ4IjozNjcuMDU4NTkzNzUsInkiOjgxfSx7IngiOjM2Ny4wNTg1OTM3NSwieSI6MTA2fV0=\" data-look=\"classic\" marker-end=\"url(#exp-1794854903850-8-0_flowchart-v2-pointEnd)\"></path><path d=\"M427.949,54.972L439.448,59.31C450.947,63.648,473.944,72.324,485.443,80.162C496.941,88,496.941,95,496.941,98.5L496.941,102\" id=\"exp-1794854903850-8-0-L_R_ORG_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_R_ORG_0\" data-points=\"W3sieCI6NDI3Ljk0OTIxODc1LCJ5Ijo1NC45NzE3ODk0NzM2ODQyMX0seyJ4Ijo0OTYuOTQxNDA2MjUsInkiOjgxfSx7IngiOjQ5Ni45NDE0MDYyNSwieSI6MTA2fV0=\" data-look=\"classic\" marker-end=\"url(#exp-1794854903850-8-0_flowchart-v2-pointEnd)\"></path><path d=\"M205.316,153.389L198.93,157.658C192.544,161.926,179.772,170.463,173.386,178.232C167,186,167,193,167,196.5L167,200\" id=\"exp-1794854903850-8-0-L_UA_SITE_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_UA_SITE_0\" data-points=\"W3sieCI6MjA1LjMxNjQwNjI1LCJ5IjoxNTMuMzg5MDMzOTQyNTU4NzR9LHsieCI6MTY3LCJ5IjoxNzl9LHsieCI6MTY3LCJ5IjoyMDR9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1794854903850-8-0_flowchart-v2-pointEnd)\"></path><path d=\"M275.301,153.389L281.687,157.658C288.073,161.926,300.845,170.463,307.231,178.232C313.617,186,313.617,193,313.617,196.5L313.617,200\" id=\"exp-1794854903850-8-0-L_UA_EDU_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_UA_EDU_0\" data-points=\"W3sieCI6Mjc1LjMwMDc4MTI1LCJ5IjoxNTMuMzg5MDMzOTQyNTU4NzR9LHsieCI6MzEzLjYxNzE4NzUsInkiOjE3OX0seyJ4IjozMTMuNjE3MTg3NSwieSI6MjA0fV0=\" data-look=\"classic\" marker-end=\"url(#exp-1794854903850-8-0_flowchart-v2-pointEnd)\"></path><path d=\"M122.279,252L114.515,256.167C106.751,260.333,91.223,268.667,83.459,276.333C75.695,284,75.695,291,75.695,294.5L75.695,298\" id=\"exp-1794854903850-8-0-L_SITE_WWW_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_SITE_WWW_0\" data-points=\"W3sieCI6MTIyLjI3OTMzNjczNDY5Mzg5LCJ5IjoyNTJ9LHsieCI6NzUuNjk1MzEyNSwieSI6Mjc3fSx7IngiOjc1LjY5NTMxMjUsInkiOjMwMn1d\" data-look=\"classic\" marker-end=\"url(#exp-1794854903850-8-0_flowchart-v2-pointEnd)\"></path><path d=\"M211.721,252L219.485,256.167C227.249,260.333,242.777,268.667,250.541,276.333C258.305,284,258.305,291,258.305,294.5L258.305,298\" id=\"exp-1794854903850-8-0-L_SITE_MAIL_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_SITE_MAIL_0\" data-points=\"W3sieCI6MjExLjcyMDY2MzI2NTMwNjExLCJ5IjoyNTJ9LHsieCI6MjU4LjMwNDY4NzUsInkiOjI3N30seyJ4IjoyNTguMzA0Njg3NSwieSI6MzAyfV0=\" data-look=\"classic\" marker-end=\"url(#exp-1794854903850-8-0_flowchart-v2-pointEnd)\"></path></g><g class=\"edgeLabels\"><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_R_UA_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_R_COM_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_R_ORG_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_UA_SITE_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_UA_EDU_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_SITE_WWW_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_SITE_MAIL_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g></g><g class=\"nodes\"><g class=\"node default  \" id=\"exp-1794854903850-8-0-flowchart-R-0\" data-look=\"classic\" transform=\"translate(367.05859375, 32)\"><rect class=\"basic label-container\" style=\"fill:#f3e5f5 !important;stroke:#7b1fa2 !important\" x=\"-60.890625\" y=\"-24\" width=\"121.78125\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-36.890625, -12)\"><rect></rect><foreignObject width=\"73.78125\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>🌐 Корінь</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903850-8-0-flowchart-UA-1\" data-look=\"classic\" transform=\"translate(240.30859375, 130)\"><rect class=\"basic label-container\" style=\"fill:#e3f2fd !important;stroke:#1565c0 !important\" x=\"-34.9921875\" y=\"-24\" width=\"69.984375\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-10.9921875, -12)\"><rect></rect><foreignObject width=\"21.984375\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>.ua</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903850-8-0-flowchart-COM-3\" data-look=\"classic\" transform=\"translate(367.05859375, 130)\"><rect class=\"basic label-container\" style=\"fill:#e3f2fd !important;stroke:#1565c0 !important\" x=\"-41.7578125\" y=\"-24\" width=\"83.515625\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-17.7578125, -12)\"><rect></rect><foreignObject width=\"35.515625\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>.com</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903850-8-0-flowchart-ORG-5\" data-look=\"classic\" transform=\"translate(496.94140625, 130)\"><rect class=\"basic label-container\" style=\"fill:#e3f2fd !important;stroke:#1565c0 !important\" x=\"-38.125\" y=\"-24\" width=\"76.25\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-14.125, -12)\"><rect></rect><foreignObject width=\"28.25\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>.org</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903850-8-0-flowchart-SITE-7\" data-look=\"classic\" transform=\"translate(167, 228)\"><rect class=\"basic label-container\" style=\"fill:#e8f5e9 !important;stroke:#388e3c !important\" x=\"-47.9453125\" y=\"-24\" width=\"95.890625\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-23.9453125, -12)\"><rect></rect><foreignObject width=\"47.890625\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>site.ua</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903850-8-0-flowchart-EDU-9\" data-look=\"classic\" transform=\"translate(313.6171875, 228)\"><rect class=\"basic label-container\" style=\"fill:#e8f5e9 !important;stroke:#388e3c !important\" x=\"-48.671875\" y=\"-24\" width=\"97.34375\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-24.671875, -12)\"><rect></rect><foreignObject width=\"49.34375\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>edu.ua</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903850-8-0-flowchart-WWW-11\" data-look=\"classic\" transform=\"translate(75.6953125, 326)\"><rect class=\"basic label-container\" style=\"fill:#fff9c4 !important;stroke:#f9a825 !important\" x=\"-67.6953125\" y=\"-24\" width=\"135.390625\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-43.6953125, -12)\"><rect></rect><foreignObject width=\"87.390625\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>www.site.ua</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903850-8-0-flowchart-MAIL-13\" data-look=\"classic\" transform=\"translate(258.3046875, 326)\"><rect class=\"basic label-container\" style=\"fill:#fff9c4 !important;stroke:#f9a825 !important\" x=\"-64.9140625\" y=\"-24\" width=\"129.828125\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-40.9140625, -12)\"><rect></rect><foreignObject width=\"81.828125\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>mail.site.ua</p></span></div></foreignObject></g></g></g></g></g><defs><filter id=\"exp-1794854903850-8-0-drop-shadow\" height=\"130%\" width=\"130%\"><feDropShadow dx=\"4\" dy=\"4\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs><defs><filter id=\"exp-1794854903850-8-0-drop-shadow-small\" height=\"150%\" width=\"150%\"><feDropShadow dx=\"2\" dy=\"2\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs></svg></div>\n<table>\n<thead>\n<tr>\n<th>Частина імені <code>www.site.ua</code></th>\n<th>Рівень</th>\n<th>Хто керує</th>\n</tr>\n</thead>\n<tbody><tr>\n<td><code>ua</code></td>\n<td>Домен верхнього рівня</td>\n<td>Адміністратор національного домену</td>\n</tr>\n<tr>\n<td><code>site</code></td>\n<td>Домен другого рівня</td>\n<td>Власник, який зареєстрував домен</td>\n</tr>\n<tr>\n<td><code>www</code></td>\n<td>Ім'я вузла в домені</td>\n<td>Власник домену, задає самостійно</td>\n</tr>\n</tbody></table>\n<div class=\"info\"><strong>ℹ️ Зона відповідальності</strong> <p>Кожен рівень знає лише про свій наступний рівень: кореневі сервери знають, де шукати <code>.ua</code>, сервери <code>.ua</code> знають, де шукати <code>site.ua</code>, а сервер <code>site.ua</code> знає адреси власних вузлів.</p>\n</div>\n\n","<h1>🔎 DNS: як відбувається пошук адреси</h1>\n<p><strong>Головна ідея:</strong> Клієнт ставить одне питання своєму DNS-серверу (резолверу). Усю подальшу роботу резолвер виконує сам, по черзі опитуючи сервери різних рівнів.</p>\n\n<div class=\"mermaid\" data-source=\"graph LR\n    PC[💻 Клієнт] --&gt; RES[🔎 Резолвер]\n    RES --&gt;|1| ROOT[Кореневий&lt;br/&gt;сервер]\n    RES --&gt;|2| TLD[Сервер&lt;br/&gt;зони .ua]\n    RES --&gt;|3| AUTH[Сервер&lt;br/&gt;site.ua]\n    style PC fill:#e3f2fd,stroke:#1565c0\n    style RES fill:#fff3e0,stroke:#ef6c00\n    style ROOT fill:#f3e5f5,stroke:#7b1fa2\n    style TLD fill:#e8f5e9,stroke:#388e3c\n    style AUTH fill:#fff9c4,stroke:#f9a825\"><svg id=\"exp-1794854903868-9-0\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" class=\"flowchart\" style=\"max-width: 521.703125px;\" viewBox=\"0 0 521.703125 332\" role=\"graphics-document document\" aria-roledescription=\"flowchart-v2\"><style>#exp-1794854903868-9-0{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#exp-1794854903868-9-0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#exp-1794854903868-9-0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#exp-1794854903868-9-0 .error-icon{fill:#552222;}#exp-1794854903868-9-0 .error-text{fill:#552222;stroke:#552222;}#exp-1794854903868-9-0 .edge-thickness-normal{stroke-width:1px;}#exp-1794854903868-9-0 .edge-thickness-thick{stroke-width:3.5px;}#exp-1794854903868-9-0 .edge-pattern-solid{stroke-dasharray:0;}#exp-1794854903868-9-0 .edge-thickness-invisible{stroke-width:0;fill:none;}#exp-1794854903868-9-0 .edge-pattern-dashed{stroke-dasharray:3;}#exp-1794854903868-9-0 .edge-pattern-dotted{stroke-dasharray:2;}#exp-1794854903868-9-0 .marker{fill:#333333;stroke:#333333;}#exp-1794854903868-9-0 .marker.cross{stroke:#333333;}#exp-1794854903868-9-0 svg{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;}#exp-1794854903868-9-0 p{margin:0;}#exp-1794854903868-9-0 .label{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;color:#333;}#exp-1794854903868-9-0 .cluster-label text{fill:#333;}#exp-1794854903868-9-0 .cluster-label span{color:#333;}#exp-1794854903868-9-0 .cluster-label span p{background-color:transparent;}#exp-1794854903868-9-0 .label text,#exp-1794854903868-9-0 span{fill:#333;color:#333;}#exp-1794854903868-9-0 .node rect,#exp-1794854903868-9-0 .node circle,#exp-1794854903868-9-0 .node ellipse,#exp-1794854903868-9-0 .node polygon,#exp-1794854903868-9-0 .node path{fill:#ECECFF;stroke:#667eea;stroke-width:1px;}#exp-1794854903868-9-0 .rough-node .label text,#exp-1794854903868-9-0 .node .label text,#exp-1794854903868-9-0 .image-shape .label,#exp-1794854903868-9-0 .icon-shape .label{text-anchor:middle;}#exp-1794854903868-9-0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#exp-1794854903868-9-0 .rough-node .label,#exp-1794854903868-9-0 .node .label,#exp-1794854903868-9-0 .image-shape .label,#exp-1794854903868-9-0 .icon-shape .label{text-align:center;}#exp-1794854903868-9-0 .node.clickable{cursor:pointer;}#exp-1794854903868-9-0 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#exp-1794854903868-9-0 .arrowheadPath{fill:#333333;}#exp-1794854903868-9-0 .edgePaths .path{stroke:#333333;stroke-width:1px;}#exp-1794854903868-9-0 .flowchart-link{stroke:#333333;fill:none;}#exp-1794854903868-9-0 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1794854903868-9-0 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#exp-1794854903868-9-0 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1794854903868-9-0 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#exp-1794854903868-9-0 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#exp-1794854903868-9-0 .cluster text{fill:#333;}#exp-1794854903868-9-0 .cluster span{color:#333;}#exp-1794854903868-9-0 .node .collapsed-indicator{fill:#aaaa33;stroke:none;opacity:0.6;}#exp-1794854903868-9-0 .node .collapsed-separator{stroke:#aaaa33;stroke-width:0.75px;}#exp-1794854903868-9-0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#exp-1794854903868-9-0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#exp-1794854903868-9-0 rect.text{fill:none;stroke-width:0;}#exp-1794854903868-9-0 .icon-shape,#exp-1794854903868-9-0 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1794854903868-9-0 .icon-shape p,#exp-1794854903868-9-0 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#exp-1794854903868-9-0 .icon-shape .label rect,#exp-1794854903868-9-0 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1794854903868-9-0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#exp-1794854903868-9-0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#exp-1794854903868-9-0 .node .neo-node{stroke:#667eea;}#exp-1794854903868-9-0 [data-look=\"neo\"].node rect,#exp-1794854903868-9-0 [data-look=\"neo\"].cluster rect,#exp-1794854903868-9-0 [data-look=\"neo\"].node polygon{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903868-9-0 [data-look=\"neo\"].swimlane.cluster rect{filter:none;}#exp-1794854903868-9-0 [data-look=\"neo\"].node path{stroke:#667eea;stroke-width:1px;}#exp-1794854903868-9-0 [data-look=\"neo\"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903868-9-0 [data-look=\"neo\"].node .neo-line path{stroke:#667eea;filter:none;}#exp-1794854903868-9-0 [data-look=\"neo\"].node circle{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903868-9-0 [data-look=\"neo\"].node circle .state-start{fill:#000000;}#exp-1794854903868-9-0 [data-look=\"neo\"].icon-shape .icon{fill:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903868-9-0 [data-look=\"neo\"].icon-shape .icon-neo path{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903868-9-0 :root{--mermaid-font-family:\"trebuchet ms\",verdana,arial,sans-serif;}</style><g><marker id=\"exp-1794854903868-9-0_flowchart-v2-pointEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 0 L 10 5 L 0 10 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903868-9-0_flowchart-v2-pointStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"4.5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 5 L 10 10 L 10 0 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903868-9-0_flowchart-v2-pointEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"11.5\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"10.5\" markerHeight=\"14\" orient=\"auto\"><path d=\"M 0 0 L 11.5 7 L 0 14 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903868-9-0_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></polygon></marker><marker id=\"exp-1794854903868-9-0_flowchart-v2-circleEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"11\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903868-9-0_flowchart-v2-circleStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-1\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903868-9-0_flowchart-v2-circleEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refY=\"5\" refX=\"12.25\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903868-9-0_flowchart-v2-circleStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-2\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903868-9-0_flowchart-v2-crossEnd\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"12\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903868-9-0_flowchart-v2-crossStart\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"-1\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903868-9-0_flowchart-v2-crossEnd-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"17.7\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5;\"></path></marker><marker id=\"exp-1794854903868-9-0_flowchart-v2-crossStart-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"-3.5\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5; stroke-dasharray: 1, 0;\"></path></marker><g class=\"root\"><g class=\"clusters\"></g><g class=\"edgePaths\"><path d=\"M128.797,166L132.964,166C137.13,166,145.464,166,153.13,166C160.797,166,167.797,166,171.297,166L174.797,166\" id=\"exp-1794854903868-9-0-L_PC_RES_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_PC_RES_0\" data-points=\"W3sieCI6MTI4Ljc5Njg3NSwieSI6MTY2fSx7IngiOjE1My43OTY4NzUsInkiOjE2Nn0seyJ4IjoxNzguNzk2ODc1LCJ5IjoxNjZ9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1794854903868-9-0_flowchart-v2-pointEnd)\"></path><path d=\"M270.947,142L284.596,125.667C298.246,109.333,325.545,76.667,343.504,60.333C361.464,44,370.083,44,374.393,44L378.703,44\" id=\"exp-1794854903868-9-0-L_RES_ROOT_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_RES_ROOT_0\" data-points=\"W3sieCI6MjcwLjk0Njk3NzQ1OTAxNjQsInkiOjE0Mn0seyJ4IjozNTIuODQzNzUsInkiOjQ0fSx7IngiOjM4Mi43MDMxMjUsInkiOjQ0fV0=\" data-look=\"classic\" marker-end=\"url(#exp-1794854903868-9-0_flowchart-v2-pointEnd)\"></path><path d=\"M322.984,166L327.961,166C332.938,166,342.891,166,353.917,166C364.943,166,377.042,166,383.091,166L389.141,166\" id=\"exp-1794854903868-9-0-L_RES_TLD_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_RES_TLD_0\" data-points=\"W3sieCI6MzIyLjk4NDM3NSwieSI6MTY2fSx7IngiOjM1Mi44NDM3NSwieSI6MTY2fSx7IngiOjM5My4xNDA2MjUsInkiOjE2Nn1d\" data-look=\"classic\" marker-end=\"url(#exp-1794854903868-9-0_flowchart-v2-pointEnd)\"></path><path d=\"M270.947,190L284.596,206.333C298.246,222.667,325.545,255.333,345.683,271.667C365.82,288,378.797,288,385.285,288L391.773,288\" id=\"exp-1794854903868-9-0-L_RES_AUTH_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_RES_AUTH_0\" data-points=\"W3sieCI6MjcwLjk0Njk3NzQ1OTAxNjQsInkiOjE5MH0seyJ4IjozNTIuODQzNzUsInkiOjI4OH0seyJ4IjozOTUuNzczNDM3NSwieSI6Mjg4fV0=\" data-look=\"classic\" marker-end=\"url(#exp-1794854903868-9-0_flowchart-v2-pointEnd)\"></path></g><g class=\"edgeLabels\"><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_PC_RES_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\" transform=\"translate(352.84375, 44)\"><g class=\"label\" data-id=\"L_RES_ROOT_0\" transform=\"translate(-3.5546875, -12)\"><foreignObject width=\"7.109375\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"><p>1</p></span></div></foreignObject></g></g><g class=\"edgeLabel\" transform=\"translate(352.84375, 166)\"><g class=\"label\" data-id=\"L_RES_TLD_0\" transform=\"translate(-4.671875, -12)\"><foreignObject width=\"9.34375\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"><p>2</p></span></div></foreignObject></g></g><g class=\"edgeLabel\" transform=\"translate(352.84375, 288)\"><g class=\"label\" data-id=\"L_RES_AUTH_0\" transform=\"translate(-4.859375, -12)\"><foreignObject width=\"9.71875\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"><p>3</p></span></div></foreignObject></g></g></g><g class=\"nodes\"><g class=\"node default  \" id=\"exp-1794854903868-9-0-flowchart-PC-0\" data-look=\"classic\" transform=\"translate(68.3984375, 166)\"><rect class=\"basic label-container\" style=\"fill:#e3f2fd !important;stroke:#1565c0 !important\" x=\"-60.3984375\" y=\"-24\" width=\"120.796875\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-36.3984375, -12)\"><rect></rect><foreignObject width=\"72.796875\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>💻 Клієнт</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903868-9-0-flowchart-RES-1\" data-look=\"classic\" transform=\"translate(250.890625, 166)\"><rect class=\"basic label-container\" style=\"fill:#fff3e0 !important;stroke:#ef6c00 !important\" x=\"-72.09375\" y=\"-24\" width=\"144.1875\" height=\"48\"></rect><g class=\"label\" style=\"\" transform=\"translate(-48.09375, -12)\"><rect></rect><foreignObject width=\"96.1875\" height=\"24\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>🔎 Резолвер</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903868-9-0-flowchart-ROOT-3\" data-look=\"classic\" transform=\"translate(448.203125, 44)\"><rect class=\"basic label-container\" style=\"fill:#f3e5f5 !important;stroke:#7b1fa2 !important\" x=\"-65.5\" y=\"-36\" width=\"131\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-41.5, -24)\"><rect></rect><foreignObject width=\"83\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>Кореневий<br>сервер</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903868-9-0-flowchart-TLD-5\" data-look=\"classic\" transform=\"translate(448.203125, 166)\"><rect class=\"basic label-container\" style=\"fill:#e8f5e9 !important;stroke:#388e3c !important\" x=\"-55.0625\" y=\"-36\" width=\"110.125\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-31.0625, -24)\"><rect></rect><foreignObject width=\"62.125\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>Сервер<br>зони .ua</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903868-9-0-flowchart-AUTH-7\" data-look=\"classic\" transform=\"translate(448.203125, 288)\"><rect class=\"basic label-container\" style=\"fill:#fff9c4 !important;stroke:#f9a825 !important\" x=\"-52.4296875\" y=\"-36\" width=\"104.859375\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-28.4296875, -24)\"><rect></rect><foreignObject width=\"56.859375\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>Сервер<br>site.ua</p></span></div></foreignObject></g></g></g></g></g><defs><filter id=\"exp-1794854903868-9-0-drop-shadow\" height=\"130%\" width=\"130%\"><feDropShadow dx=\"4\" dy=\"4\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs><defs><filter id=\"exp-1794854903868-9-0-drop-shadow-small\" height=\"150%\" width=\"150%\"><feDropShadow dx=\"2\" dy=\"2\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs></svg></div>\n<table>\n<thead>\n<tr>\n<th>Крок</th>\n<th>Кого питає резолвер</th>\n<th>Що отримує у відповідь</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>1️⃣</td>\n<td>Кореневий сервер</td>\n<td>Адреси серверів, що відповідають за <code>.ua</code></td>\n</tr>\n<tr>\n<td>2️⃣</td>\n<td>Сервер зони <code>.ua</code></td>\n<td>Адресу сервера, що відповідає за <code>site.ua</code></td>\n</tr>\n<tr>\n<td>3️⃣</td>\n<td>Сервер <code>site.ua</code></td>\n<td>IP-адресу вузла <code>www.site.ua</code></td>\n</tr>\n</tbody></table>\n<div class=\"tip\"><strong>💡 Кешування</strong> <p>Отриману відповідь резолвер і сам комп'ютер зберігають у кеші на обмежений час. Повторний запит до того самого імені не потребує нового пошуку, тому сайт відкривається швидше.</p>\n</div>\n\n\n\n\n\n<div class=\"note\"><strong>📝 Звідки клієнт знає адресу резолвера</strong> <p>Зазвичай її видає DHCP-сервер разом з IP-адресою. Це може бути сервер провайдера, сервер підприємства або публічний резолвер.</p>\n</div>\n\n","<h1>🗂️ DNS: записи та перевірка роботи</h1>\n<div class=\"info\"><strong>ℹ️ Визначення</strong> <p><strong>Ресурсний запис</strong> - рядок у базі DNS-сервера, який пов'язує доменне ім'я з певним значенням.</p>\n</div>\n\n\n\n<table>\n<thead>\n<tr>\n<th>Тип запису</th>\n<th>Що зберігає</th>\n<th>Приклад</th>\n</tr>\n</thead>\n<tbody><tr>\n<td><strong>A</strong></td>\n<td>IPv4-адресу для імені</td>\n<td><code>www.site.ua → 203.0.113.10</code></td>\n</tr>\n<tr>\n<td><strong>AAAA</strong></td>\n<td>IPv6-адресу для імені</td>\n<td><code>www.site.ua → 2001:db8::10</code></td>\n</tr>\n<tr>\n<td><strong>CNAME</strong></td>\n<td>Псевдонім: інше ім'я того ж вузла</td>\n<td><code>shop.site.ua → www.site.ua</code></td>\n</tr>\n<tr>\n<td><strong>MX</strong></td>\n<td>Поштовий сервер домену</td>\n<td><code>site.ua → mail.site.ua</code></td>\n</tr>\n</tbody></table>\n<p><strong>Перевірка з командного рядка:</strong></p>\n<pre><code class=\"language-plaintext hljs\" data-highlighted=\"yes\">C:\\&gt; nslookup www.site.ua\nServer:   dns.office.local\nAddress:  192.168.50.5\n\nName:     www.site.ua\nAddress:  203.0.113.10</code></pre><div class=\"tip\"><strong>💡 У Packet Tracer</strong> <p>На сервері: <strong>Services → DNS</strong>, увімкнути сервіс (On), ввести ім'я та адресу і натиснути <strong>Add</strong>. Після цього на комп'ютерах, де вказано адресу цього DNS-сервера, сайт відкривається за іменем.</p>\n</div>\n\n","<h1>🌐 HTTP: основа Всесвітньої павутини</h1>\n<div class=\"info\"><strong>ℹ️ Визначення</strong> <p><strong>HTTP</strong> (HyperText Transfer Protocol / Протокол передавання гіпертексту) - прикладний протокол, за яким клієнт (зазвичай браузер) запитує ресурси у вебсервера та отримує їх.</p>\n</div>\n\n\n\n<p><strong>Головна ідея:</strong> Обмін складається з пар \"запит-відповідь\". Кожен ресурс (сторінка, зображення, файл стилів) має власну адресу, яку називають <strong>URL</strong>.</p>\n<p><strong>Будова URL</strong> на прикладі <code>http://www.site.ua:80/news/index.html</code>:</p>\n<table>\n<thead>\n<tr>\n<th>Частина</th>\n<th>Значення</th>\n</tr>\n</thead>\n<tbody><tr>\n<td><code>http</code></td>\n<td>📜 Протокол, за яким відбувається звернення</td>\n</tr>\n<tr>\n<td><code>www.site.ua</code></td>\n<td>🖥️ Доменне ім'я сервера (перетворюється через DNS)</td>\n</tr>\n<tr>\n<td><code>80</code></td>\n<td>🚪 Порт. Стандартний порт можна не вказувати</td>\n</tr>\n<tr>\n<td><code>/news/index.html</code></td>\n<td>📄 Шлях до ресурсу на сервері</td>\n</tr>\n</tbody></table>\n<div class=\"note\"><strong>📝 Важлива властивість</strong> <p>HTTP не зберігає стан: кожен запит сервер обробляє незалежно від попередніх. Усе, що потрібно для обробки, клієнт передає в самому запиті.</p>\n</div>\n\n\n\n\n\n<div class=\"tip\"><strong>💡 Для майбутніх розробників</strong> <p>HTTP використовують не лише браузери. Мобільні застосунки та сервери обмінюються даними між собою за цим самим протоколом.</p>\n</div>\n\n","<h1>📨 HTTP: запит і відповідь</h1>\n<p><strong>Головна ідея:</strong> HTTP/1.1 є текстовим протоколом. І запит, і відповідь складаються з трьох частин: стартовий рядок, заголовки, тіло.</p>\n<p><strong>Запит клієнта:</strong></p>\n<pre><code class=\"language-http\">GET /news/index.html HTTP/1.1\nHost: www.site.ua\nUser-Agent: Mozilla/5.0</code></pre><p><strong>Відповідь сервера:</strong></p>\n<pre><code class=\"language-http\">HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 1256\n\n&lt;html&gt; ... &lt;/html&gt;</code></pre><table>\n<thead>\n<tr>\n<th>Частина</th>\n<th>У запиті</th>\n<th>У відповіді</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>1️⃣ Стартовий рядок</td>\n<td>Метод, шлях, версія протоколу</td>\n<td>Версія протоколу, код стану</td>\n</tr>\n<tr>\n<td>2️⃣ Заголовки</td>\n<td>Службові дані: ім'я сервера, тип клієнта</td>\n<td>Службові дані: тип і розмір вмісту</td>\n</tr>\n<tr>\n<td>3️⃣ Тіло</td>\n<td>Дані форми (може бути порожнім)</td>\n<td>Сам ресурс: HTML, зображення, дані</td>\n</tr>\n</tbody></table>\n<div class=\"tip\"><strong>💡 Як побачити це на практиці</strong> <p>У браузері натисніть <strong>F12</strong> і відкрийте вкладку <strong>Network</strong>. Там видно кожен запит сторінки, його заголовки та відповідь сервера.</p>\n</div>\n\n","<h1>🔢 HTTP: методи та коди стану</h1>\n<p><strong>Метод</strong> повідомляє серверу, яку дію клієнт хоче виконати з ресурсом.</p>\n<table>\n<thead>\n<tr>\n<th>Метод</th>\n<th>Призначення</th>\n<th>Приклад</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>📥 <strong>GET</strong></td>\n<td>Отримати ресурс</td>\n<td>Відкрити сторінку</td>\n</tr>\n<tr>\n<td>📤 <strong>POST</strong></td>\n<td>Надіслати дані на сервер</td>\n<td>Відправити форму реєстрації</td>\n</tr>\n<tr>\n<td>✏️ <strong>PUT</strong></td>\n<td>Замінити ресурс новою версією</td>\n<td>Оновити профіль</td>\n</tr>\n<tr>\n<td>🗑️ <strong>DELETE</strong></td>\n<td>Видалити ресурс</td>\n<td>Видалити коментар</td>\n</tr>\n</tbody></table>\n<p><strong>Код стану</strong> повідомляє клієнту результат обробки запиту. Перша цифра визначає групу.</p>\n<table>\n<thead>\n<tr>\n<th>Група</th>\n<th>Значення</th>\n<th>Поширені коди</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>✅ <strong>2xx</strong></td>\n<td>Успіх</td>\n<td><code>200 OK</code></td>\n</tr>\n<tr>\n<td>↪️ <strong>3xx</strong></td>\n<td>Переспрямування</td>\n<td><code>301 Moved Permanently</code>: ресурс переїхав на іншу адресу</td>\n</tr>\n<tr>\n<td>⚠️ <strong>4xx</strong></td>\n<td>Помилка клієнта</td>\n<td><code>404 Not Found</code>, <code>403 Forbidden</code></td>\n</tr>\n<tr>\n<td>💥 <strong>5xx</strong></td>\n<td>Помилка сервера</td>\n<td><code>500 Internal Server Error</code></td>\n</tr>\n</tbody></table>\n<div class=\"tip\"><strong>💡 Як читати помилку</strong> <p>Код <strong>4xx</strong> означає, що проблема в запиті: неправильна адреса або немає прав доступу. Код <strong>5xx</strong> означає, що запит правильний, але збій стався на сервері.</p>\n</div>\n\n","<h1>🔒 HTTPS: захищений варіант HTTP</h1>\n<div class=\"info\"><strong>ℹ️ Визначення</strong> <p><strong>HTTPS</strong> (HyperText Transfer Protocol Secure / Захищений протокол передавання гіпертексту) - це той самий HTTP, але дані передаються через зашифроване з'єднання, яке забезпечує протокол <strong>TLS</strong>.</p>\n</div>\n\n\n\n<table>\n<thead>\n<tr>\n<th>Характеристика</th>\n<th>🌐 HTTP</th>\n<th>🔒 HTTPS</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>Порт</td>\n<td>80</td>\n<td>443</td>\n</tr>\n<tr>\n<td>Шифрування</td>\n<td>Немає, дані йдуть відкритим текстом</td>\n<td>Є, дані зашифровані</td>\n</tr>\n<tr>\n<td>Перевірка сервера</td>\n<td>Немає</td>\n<td>Є, за допомогою сертифіката</td>\n</tr>\n<tr>\n<td>Позначка в браузері</td>\n<td>Попередження \"Не захищено\"</td>\n<td>Попередження відсутнє</td>\n</tr>\n</tbody></table>\n<p><strong>Що гарантує HTTPS:</strong></p>\n<ul>\n<li>🙈 <strong>Конфіденційність:</strong> сторонній, що перехопив трафік, не може прочитати дані</li>\n<li>🧾 <strong>Цілісність:</strong> дані неможливо непомітно змінити дорогою</li>\n<li>🪪 <strong>Автентичність:</strong> сертифікат підтверджує, що відповідає саме сервер цього домену, а не підставний вузол</li>\n</ul>\n<div class=\"danger\"><strong>🚫 Практичне правило</strong> <p>Ніколи не вводьте паролі та дані платіжних карток на сторінках, що працюють через HTTP. У відкритій мережі, наприклад у публічному Wi-Fi, такі дані може прочитати будь-хто, хто перехоплює трафік.</p>\n</div>\n\n","<h1>🔗 Як три сервіси працюють разом</h1>\n<p><strong>Ситуація:</strong> ноутбук підключається до мережі, і користувач відкриває <code>http://www.site.ua</code>.</p>\n\n<div class=\"mermaid\" data-source=\"graph LR\n    A[1️⃣ DHCP&lt;br/&gt;налаштування] --&gt; B[2️⃣ DNS&lt;br/&gt;ім'я в IP]\n    B --&gt; C[3️⃣ TCP&lt;br/&gt;з'єднання]\n    C --&gt; D[4️⃣ HTTP&lt;br/&gt;запит]\n    D --&gt; E[5️⃣ Сторінка&lt;br/&gt;у браузері]\n    style A fill:#e3f2fd,stroke:#1565c0\n    style B fill:#e8f5e9,stroke:#388e3c\n    style C fill:#f3e5f5,stroke:#7b1fa2\n    style D fill:#fff3e0,stroke:#ef6c00\n    style E fill:#fff9c4,stroke:#f9a825\"><svg id=\"exp-1794854903880-15-0\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" class=\"flowchart\" style=\"max-width: 855.3125px;\" viewBox=\"0 0 855.3125 88\" role=\"graphics-document document\" aria-roledescription=\"flowchart-v2\"><style>#exp-1794854903880-15-0{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#exp-1794854903880-15-0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#exp-1794854903880-15-0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#exp-1794854903880-15-0 .error-icon{fill:#552222;}#exp-1794854903880-15-0 .error-text{fill:#552222;stroke:#552222;}#exp-1794854903880-15-0 .edge-thickness-normal{stroke-width:1px;}#exp-1794854903880-15-0 .edge-thickness-thick{stroke-width:3.5px;}#exp-1794854903880-15-0 .edge-pattern-solid{stroke-dasharray:0;}#exp-1794854903880-15-0 .edge-thickness-invisible{stroke-width:0;fill:none;}#exp-1794854903880-15-0 .edge-pattern-dashed{stroke-dasharray:3;}#exp-1794854903880-15-0 .edge-pattern-dotted{stroke-dasharray:2;}#exp-1794854903880-15-0 .marker{fill:#333333;stroke:#333333;}#exp-1794854903880-15-0 .marker.cross{stroke:#333333;}#exp-1794854903880-15-0 svg{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:16px;}#exp-1794854903880-15-0 p{margin:0;}#exp-1794854903880-15-0 .label{font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;color:#333;}#exp-1794854903880-15-0 .cluster-label text{fill:#333;}#exp-1794854903880-15-0 .cluster-label span{color:#333;}#exp-1794854903880-15-0 .cluster-label span p{background-color:transparent;}#exp-1794854903880-15-0 .label text,#exp-1794854903880-15-0 span{fill:#333;color:#333;}#exp-1794854903880-15-0 .node rect,#exp-1794854903880-15-0 .node circle,#exp-1794854903880-15-0 .node ellipse,#exp-1794854903880-15-0 .node polygon,#exp-1794854903880-15-0 .node path{fill:#ECECFF;stroke:#667eea;stroke-width:1px;}#exp-1794854903880-15-0 .rough-node .label text,#exp-1794854903880-15-0 .node .label text,#exp-1794854903880-15-0 .image-shape .label,#exp-1794854903880-15-0 .icon-shape .label{text-anchor:middle;}#exp-1794854903880-15-0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#exp-1794854903880-15-0 .rough-node .label,#exp-1794854903880-15-0 .node .label,#exp-1794854903880-15-0 .image-shape .label,#exp-1794854903880-15-0 .icon-shape .label{text-align:center;}#exp-1794854903880-15-0 .node.clickable{cursor:pointer;}#exp-1794854903880-15-0 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#exp-1794854903880-15-0 .arrowheadPath{fill:#333333;}#exp-1794854903880-15-0 .edgePaths .path{stroke:#333333;stroke-width:1px;}#exp-1794854903880-15-0 .flowchart-link{stroke:#333333;fill:none;}#exp-1794854903880-15-0 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1794854903880-15-0 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#exp-1794854903880-15-0 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1794854903880-15-0 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#exp-1794854903880-15-0 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#exp-1794854903880-15-0 .cluster text{fill:#333;}#exp-1794854903880-15-0 .cluster span{color:#333;}#exp-1794854903880-15-0 .node .collapsed-indicator{fill:#aaaa33;stroke:none;opacity:0.6;}#exp-1794854903880-15-0 .node .collapsed-separator{stroke:#aaaa33;stroke-width:0.75px;}#exp-1794854903880-15-0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#exp-1794854903880-15-0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#exp-1794854903880-15-0 rect.text{fill:none;stroke-width:0;}#exp-1794854903880-15-0 .icon-shape,#exp-1794854903880-15-0 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#exp-1794854903880-15-0 .icon-shape p,#exp-1794854903880-15-0 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#exp-1794854903880-15-0 .icon-shape .label rect,#exp-1794854903880-15-0 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#exp-1794854903880-15-0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#exp-1794854903880-15-0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#exp-1794854903880-15-0 .node .neo-node{stroke:#667eea;}#exp-1794854903880-15-0 [data-look=\"neo\"].node rect,#exp-1794854903880-15-0 [data-look=\"neo\"].cluster rect,#exp-1794854903880-15-0 [data-look=\"neo\"].node polygon{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903880-15-0 [data-look=\"neo\"].swimlane.cluster rect{filter:none;}#exp-1794854903880-15-0 [data-look=\"neo\"].node path{stroke:#667eea;stroke-width:1px;}#exp-1794854903880-15-0 [data-look=\"neo\"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903880-15-0 [data-look=\"neo\"].node .neo-line path{stroke:#667eea;filter:none;}#exp-1794854903880-15-0 [data-look=\"neo\"].node circle{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903880-15-0 [data-look=\"neo\"].node circle .state-start{fill:#000000;}#exp-1794854903880-15-0 [data-look=\"neo\"].icon-shape .icon{fill:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903880-15-0 [data-look=\"neo\"].icon-shape .icon-neo path{stroke:#667eea;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#exp-1794854903880-15-0 :root{--mermaid-font-family:\"trebuchet ms\",verdana,arial,sans-serif;}</style><g><marker id=\"exp-1794854903880-15-0_flowchart-v2-pointEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 0 L 10 5 L 0 10 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903880-15-0_flowchart-v2-pointStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"4.5\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M 0 5 L 10 10 L 10 0 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903880-15-0_flowchart-v2-pointEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"11.5\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"10.5\" markerHeight=\"14\" orient=\"auto\"><path d=\"M 0 0 L 11.5 7 L 0 14 z\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903880-15-0_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></polygon></marker><marker id=\"exp-1794854903880-15-0_flowchart-v2-circleEnd\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"11\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903880-15-0_flowchart-v2-circleStart\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-1\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 1; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903880-15-0_flowchart-v2-circleEnd-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refY=\"5\" refX=\"12.25\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903880-15-0_flowchart-v2-circleStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 10\" refX=\"-2\" refY=\"5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"14\" markerHeight=\"14\" orient=\"auto\"><circle cx=\"5\" cy=\"5\" r=\"5\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"></circle></marker><marker id=\"exp-1794854903880-15-0_flowchart-v2-crossEnd\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"12\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903880-15-0_flowchart-v2-crossStart\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 11 11\" refX=\"-1\" refY=\"5.2\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11\" markerHeight=\"11\" orient=\"auto\"><path d=\"M 1,1 l 9,9 M 10,1 l -9,9\" class=\"arrowMarkerPath\" style=\"stroke-width: 2; stroke-dasharray: 1, 0;\"></path></marker><marker id=\"exp-1794854903880-15-0_flowchart-v2-crossEnd-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"17.7\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5;\"></path></marker><marker id=\"exp-1794854903880-15-0_flowchart-v2-crossStart-margin\" class=\"marker cross flowchart-v2\" viewBox=\"0 0 15 15\" refX=\"-3.5\" refY=\"7.5\" markerUnits=\"userSpaceOnUse\" markerWidth=\"12\" markerHeight=\"12\" orient=\"auto\"><path d=\"M 1,1 L 14,14 M 1,14 L 14,1\" class=\"arrowMarkerPath\" style=\"stroke-width: 2.5; stroke-dasharray: 1, 0;\"></path></marker><g class=\"root\"><g class=\"clusters\"></g><g class=\"edgePaths\"><path d=\"M164.391,44L168.557,44C172.724,44,181.057,44,188.724,44C196.391,44,203.391,44,206.891,44L210.391,44\" id=\"exp-1794854903880-15-0-L_A_B_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_A_B_0\" data-points=\"W3sieCI6MTY0LjM5MDYyNSwieSI6NDR9LHsieCI6MTg5LjM5MDYyNSwieSI6NDR9LHsieCI6MjE0LjM5MDYyNSwieSI6NDR9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1794854903880-15-0_flowchart-v2-pointEnd)\"></path><path d=\"M321.188,44L325.354,44C329.521,44,337.854,44,345.521,44C353.188,44,360.188,44,363.688,44L367.188,44\" id=\"exp-1794854903880-15-0-L_B_C_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_B_C_0\" data-points=\"W3sieCI6MzIxLjE4NzUsInkiOjQ0fSx7IngiOjM0Ni4xODc1LCJ5Ijo0NH0seyJ4IjozNzEuMTg3NSwieSI6NDR9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1794854903880-15-0_flowchart-v2-pointEnd)\"></path><path d=\"M494.656,44L498.823,44C502.99,44,511.323,44,518.99,44C526.656,44,533.656,44,537.156,44L540.656,44\" id=\"exp-1794854903880-15-0-L_C_D_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_C_D_0\" data-points=\"W3sieCI6NDk0LjY1NjI1LCJ5Ijo0NH0seyJ4Ijo1MTkuNjU2MjUsInkiOjQ0fSx7IngiOjU0NC42NTYyNSwieSI6NDR9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1794854903880-15-0_flowchart-v2-pointEnd)\"></path><path d=\"M657.922,44L662.089,44C666.255,44,674.589,44,682.255,44C689.922,44,696.922,44,700.422,44L703.922,44\" id=\"exp-1794854903880-15-0-L_D_E_0\" class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\" style=\";\" data-edge=\"true\" data-et=\"edge\" data-id=\"L_D_E_0\" data-points=\"W3sieCI6NjU3LjkyMTg3NSwieSI6NDR9LHsieCI6NjgyLjkyMTg3NSwieSI6NDR9LHsieCI6NzA3LjkyMTg3NSwieSI6NDR9XQ==\" data-look=\"classic\" marker-end=\"url(#exp-1794854903880-15-0_flowchart-v2-pointEnd)\"></path></g><g class=\"edgeLabels\"><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_A_B_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_B_C_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_C_D_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g><g class=\"edgeLabel\"><g class=\"label\" data-id=\"L_D_E_0\" transform=\"translate(0, 0)\"><foreignObject width=\"0\" height=\"0\"><div xmlns=\"http://www.w3.org/1999/xhtml\" class=\"labelBkg\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"edgeLabel \"></span></div></foreignObject></g></g></g><g class=\"nodes\"><g class=\"node default  \" id=\"exp-1794854903880-15-0-flowchart-A-0\" data-look=\"classic\" transform=\"translate(86.1953125, 44)\"><rect class=\"basic label-container\" style=\"fill:#e3f2fd !important;stroke:#1565c0 !important\" x=\"-78.1953125\" y=\"-36\" width=\"156.390625\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-54.1953125, -24)\"><rect></rect><foreignObject width=\"108.390625\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>1️⃣ DHCP<br>налаштування</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903880-15-0-flowchart-B-1\" data-look=\"classic\" transform=\"translate(267.7890625, 44)\"><rect class=\"basic label-container\" style=\"fill:#e8f5e9 !important;stroke:#388e3c !important\" x=\"-53.3984375\" y=\"-36\" width=\"106.796875\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-29.3984375, -24)\"><rect></rect><foreignObject width=\"58.796875\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>2️⃣ DNS<br>ім'я в IP</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903880-15-0-flowchart-C-3\" data-look=\"classic\" transform=\"translate(432.921875, 44)\"><rect class=\"basic label-container\" style=\"fill:#f3e5f5 !important;stroke:#7b1fa2 !important\" x=\"-61.734375\" y=\"-36\" width=\"123.46875\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-37.734375, -24)\"><rect></rect><foreignObject width=\"75.46875\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>3️⃣ TCP<br>з'єднання</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903880-15-0-flowchart-D-5\" data-look=\"classic\" transform=\"translate(601.2890625, 44)\"><rect class=\"basic label-container\" style=\"fill:#fff3e0 !important;stroke:#ef6c00 !important\" x=\"-56.6328125\" y=\"-36\" width=\"113.265625\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-32.6328125, -24)\"><rect></rect><foreignObject width=\"65.265625\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>4️⃣ HTTP<br>запит</p></span></div></foreignObject></g></g><g class=\"node default  \" id=\"exp-1794854903880-15-0-flowchart-E-7\" data-look=\"classic\" transform=\"translate(777.6171875, 44)\"><rect class=\"basic label-container\" style=\"fill:#fff9c4 !important;stroke:#f9a825 !important\" x=\"-69.6953125\" y=\"-36\" width=\"139.390625\" height=\"72\"></rect><g class=\"label\" style=\"\" transform=\"translate(-45.6953125, -24)\"><rect></rect><foreignObject width=\"91.390625\" height=\"48\"><div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;\"><span class=\"nodeLabel \"><p>5️⃣ Сторінка<br>у браузері</p></span></div></foreignObject></g></g></g></g></g><defs><filter id=\"exp-1794854903880-15-0-drop-shadow\" height=\"130%\" width=\"130%\"><feDropShadow dx=\"4\" dy=\"4\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs><defs><filter id=\"exp-1794854903880-15-0-drop-shadow-small\" height=\"150%\" width=\"150%\"><feDropShadow dx=\"2\" dy=\"2\" stdDeviation=\"0\" flood-opacity=\"0.06\" flood-color=\"#000000\"></feDropShadow></filter></defs></svg></div>\n<table>\n<thead>\n<tr>\n<th>Крок</th>\n<th>Що відбувається</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>1️⃣</td>\n<td>Ноутбук отримує через <strong>DHCP</strong> IP-адресу, маску, шлюз і адресу DNS-сервера</td>\n</tr>\n<tr>\n<td>2️⃣</td>\n<td>Браузер через <strong>DNS</strong> дізнається IP-адресу вузла <code>www.site.ua</code></td>\n</tr>\n<tr>\n<td>3️⃣</td>\n<td>Браузер встановлює TCP-з'єднання з цією адресою на порт 80</td>\n</tr>\n<tr>\n<td>4️⃣</td>\n<td>Браузер надсилає <strong>HTTP</strong>-запит <code>GET /</code></td>\n</tr>\n<tr>\n<td>5️⃣</td>\n<td>Сервер повертає відповідь <code>200 OK</code> з HTML, і браузер відображає сторінку</td>\n</tr>\n</tbody></table>\n<div class=\"tip\"><strong>💡 Послідовність діагностики \"сайт не відкривається\"</strong> <ol>\n<li><code>ipconfig</code>: чи отримано адресу? Якщо 169.254.x.x, проблема з <strong>DHCP</strong></li>\n<li><code>ping 192.168.50.1</code>: чи доступний шлюз?</li>\n<li><code>nslookup www.site.ua</code>: чи повертається адреса? Якщо ні, проблема з <strong>DNS</strong></li>\n<li><code>ping 203.0.113.10</code>: якщо сервер не відповідає, проблема з маршрутом. Якщо відповідає, а сторінка не відкривається, проблема з <strong>вебсервером</strong></li>\n</ol>\n</div>\n\n","<h1>📝 Ключові висновки</h1>\n<div class=\"success\"><strong>✅ Головне з лекції</strong> <ol>\n<li>🧩 <strong>Мережеві сервіси</strong> працюють на прикладному рівні за моделлю \"клієнт-сервер\". Потрібний сервіс на вузлі визначається номером порту</li>\n<li>🏷️ <strong>DHCP</strong> автоматично видає вузлу IP-адресу, маску, шлюз і адресу DNS-сервера. Обмін складається з чотирьох кроків: Discover, Offer, Request, Acknowledge</li>\n<li>⏳ Адреса видається <strong>в оренду</strong> з пулу. Статичні адреси серверів і маршрутизаторів з пулу виключають</li>\n<li>📖 <strong>DNS</strong> перетворює доменне ім'я на IP-адресу. Система імен має структуру дерева, де кожен рівень відповідає лише за свою зону</li>\n<li>🌐 <strong>HTTP</strong> передає вебресурси парами \"запит-відповідь\". Метод описує дію, код стану описує результат</li>\n<li>🔒 <strong>HTTPS</strong> додає до HTTP шифрування, контроль цілісності та перевірку справжності сервера</li>\n<li>🔗 Сервіси залежать один від одного: без DHCP немає налаштувань, без DNS неможливо знайти сервер за іменем, без HTTP неможливо отримати сторінку</li>\n</ol>\n</div>\n\n\n\n\n\n<div class=\"tip\"><strong>💡 Практичний висновок</strong> <p>Більшість звернень \"не працює інтернет\" пояснюється збоєм одного з цих трьох сервісів. Перевіряйте їх у тому порядку, у якому вони використовуються: DHCP, потім DNS, потім HTTP.</p>\n</div>\n\n","<h1>❓ Контрольні питання</h1>\n<ol>\n<li><p>🤔 Що таке <strong>мережевий сервіс</strong> і навіщо потрібен номер порту, якщо вузол уже має IP-адресу?</p>\n</li>\n<li><p>🤔 Які чотири параметри вузол отримує від <strong>DHCP-сервера</strong> і для чого потрібен кожен із них?</p>\n</li>\n<li><p>🤔 Опишіть чотири кроки отримання адреси через DHCP. Чому перше повідомлення клієнта є широкомовним?</p>\n</li>\n<li><p>🤔 Про що свідчить адреса виду <strong>169.254.x.x</strong> на комп'ютері з Windows?</p>\n</li>\n<li><p>🤔 З яких частин складається доменне ім'я <code>www.site.ua</code>? Які сервери по черзі опитує резолвер, щоб знайти його адресу?</p>\n</li>\n<li><p>🤔 З яких частин складаються <strong>HTTP-запит</strong> і <strong>HTTP-відповідь</strong>? Чим відрізняються коди груп 4xx та 5xx?</p>\n</li>\n<li><p>🤔 Чим <strong>HTTPS</strong> відрізняється від HTTP і які три властивості він гарантує?</p>\n</li>\n</ol>\n","<h1>📚 Глосарій термінів</h1>\n<table>\n<thead>\n<tr>\n<th>Термін</th>\n<th>English</th>\n<th>Визначення</th>\n</tr>\n</thead>\n<tbody><tr>\n<td><strong>Мережевий сервіс</strong></td>\n<td>Network service</td>\n<td>Програма на вузлі мережі, що надає іншим вузлам певну послугу</td>\n</tr>\n<tr>\n<td><strong>Клієнт</strong></td>\n<td>Client</td>\n<td>Програма або вузол, що надсилає запит до сервера</td>\n</tr>\n<tr>\n<td><strong>Сервер</strong></td>\n<td>Server</td>\n<td>Програма або вузол, що обробляє запити та повертає відповіді</td>\n</tr>\n<tr>\n<td><strong>Порт</strong></td>\n<td>Port</td>\n<td>Число, що визначає програму-отримувача даних на вузлі</td>\n</tr>\n<tr>\n<td><strong>Пул адрес</strong></td>\n<td>Address pool</td>\n<td>Діапазон IP-адрес, які DHCP-сервер може видавати клієнтам</td>\n</tr>\n<tr>\n<td><strong>Оренда</strong></td>\n<td>Lease</td>\n<td>Видача IP-адреси клієнту на обмежений час</td>\n</tr>\n<tr>\n<td><strong>Шлюз за замовчуванням</strong></td>\n<td>Default gateway</td>\n<td>Маршрутизатор, через який вузол надсилає пакети в інші мережі</td>\n</tr>\n<tr>\n<td><strong>Доменне ім'я</strong></td>\n<td>Domain name</td>\n<td>Текстове ім'я вузла або групи вузлів у мережі</td>\n</tr>\n<tr>\n<td><strong>Резолвер</strong></td>\n<td>Resolver</td>\n<td>DNS-сервер, який шукає адресу на запит клієнта, опитуючи інші сервери</td>\n</tr>\n<tr>\n<td><strong>Ресурсний запис</strong></td>\n<td>Resource record</td>\n<td>Рядок бази DNS, що пов'язує ім'я з адресою або іншим значенням</td>\n</tr>\n<tr>\n<td><strong>Кеш</strong></td>\n<td>Cache</td>\n<td>Тимчасове сховище вже отриманих відповідей для прискорення роботи</td>\n</tr>\n<tr>\n<td><strong>Метод</strong></td>\n<td>Method</td>\n<td>Частина HTTP-запиту, що вказує дію над ресурсом</td>\n</tr>\n<tr>\n<td><strong>Код стану</strong></td>\n<td>Status code</td>\n<td>Тризначне число у відповіді, що повідомляє результат обробки запиту</td>\n</tr>\n<tr>\n<td><strong>Сертифікат</strong></td>\n<td>Certificate</td>\n<td>Електронний документ, що підтверджує належність сервера до домену</td>\n</tr>\n</tbody></table>\n","<h1>🔤 Глосарій абревіатур</h1>\n<table>\n<thead>\n<tr>\n<th>Абревіатура</th>\n<th>Розшифровка</th>\n<th>Переклад</th>\n</tr>\n</thead>\n<tbody><tr>\n<td><strong>DHCP</strong></td>\n<td>Dynamic Host Configuration Protocol</td>\n<td>Протокол динамічного налаштування вузла</td>\n</tr>\n<tr>\n<td><strong>DORA</strong></td>\n<td>Discover, Offer, Request, Acknowledge</td>\n<td>Чотири кроки отримання адреси через DHCP</td>\n</tr>\n<tr>\n<td><strong>DNS</strong></td>\n<td>Domain Name System</td>\n<td>Система доменних імен</td>\n</tr>\n<tr>\n<td><strong>HTTP</strong></td>\n<td>HyperText Transfer Protocol</td>\n<td>Протокол передавання гіпертексту</td>\n</tr>\n<tr>\n<td><strong>HTTPS</strong></td>\n<td>HyperText Transfer Protocol Secure</td>\n<td>Захищений протокол передавання гіпертексту</td>\n</tr>\n<tr>\n<td><strong>URL</strong></td>\n<td>Uniform Resource Locator</td>\n<td>Уніфікований локатор ресурсу</td>\n</tr>\n<tr>\n<td><strong>HTML</strong></td>\n<td>HyperText Markup Language</td>\n<td>Мова розмітки гіпертексту</td>\n</tr>\n<tr>\n<td><strong>TLS</strong></td>\n<td>Transport Layer Security</td>\n<td>Протокол захисту транспортного рівня</td>\n</tr>\n<tr>\n<td><strong>TCP</strong></td>\n<td>Transmission Control Protocol</td>\n<td>Протокол керування передаванням</td>\n</tr>\n<tr>\n<td><strong>UDP</strong></td>\n<td>User Datagram Protocol</td>\n<td>Протокол дейтаграм користувача</td>\n</tr>\n<tr>\n<td><strong>IP</strong></td>\n<td>Internet Protocol</td>\n<td>Міжмережевий протокол</td>\n</tr>\n</tbody></table>\n"];let currentSlideIndex=0;
+function renderMath(root){if(typeof renderMathInElement!=="function"||!root)return;try{renderMathInElement(root,{delimiters:[{left:"$$",right:"$$",display:true},{left:"\\[",right:"\\]",display:true},{left:"$",right:"$",display:false},{left:"\\(",right:"\\)",display:false}],throwOnError:false,strict:"ignore",ignoredTags:["script","noscript","style","textarea","pre","code"]});}catch(e){console.warn("Math render error:",e);}}
+function showSlide(i){if(i<0||i>=slides.length)return;currentSlideIndex=i;const el=document.getElementById("current-slide");el.innerHTML=slides[i];el.scrollTop=0;renderMath(el);document.getElementById("progress-bar").style.width=((i+1)/slides.length*100)+"%";document.getElementById("slide-number").textContent=(i+1)+" / "+slides.length;updateSidebarActive();}
+function nextSlide(){if(currentSlideIndex<slides.length-1)showSlide(currentSlideIndex+1);}
+function previousSlide(){if(currentSlideIndex>0)showSlide(currentSlideIndex-1);}
+function toggleSidebar(){document.getElementById("sidebar").classList.toggle("open");}
+function toggleHelp(){document.getElementById("help-overlay").classList.toggle("hidden");}
+function toggleFullscreen(){if(!document.fullscreenElement){const pc=document.getElementById("presentation-container");if(pc.requestFullscreen)pc.requestFullscreen();else if(pc.webkitRequestFullscreen)pc.webkitRequestFullscreen();else if(pc.msRequestFullscreen)pc.msRequestFullscreen();else if(pc.mozRequestFullScreen)pc.mozRequestFullScreen();}else{if(document.exitFullscreen)document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen();else if(document.msExitFullscreen)document.msExitFullscreen();else if(document.mozCancelFullScreen)document.mozCancelFullScreen();}}
+function generateSidebar(){const sc=document.getElementById("sidebar-content");sc.innerHTML="";slides.forEach((html,idx)=>{const t=document.createElement("div");t.className="slide-thumbnail";if(idx===0)t.classList.add("active");const tmp=document.createElement("div");tmp.innerHTML=html;const title=tmp.querySelector("h1,h2");const titleText=title?title.textContent:("Слайд "+(idx+1));const textContent=tmp.textContent.replace(/s+/g," ").trim();const preview=textContent.substring(0,100)+(textContent.length>100?"...":"");t.innerHTML="<div class=\"slide-thumbnail-number\">"+(idx+1)+"</div><div class=\"slide-thumbnail-title\">"+titleText+"</div><div class=\"slide-thumbnail-content\">"+preview+"</div>";t.onclick=()=>{showSlide(idx);if(window.innerWidth<1024)toggleSidebar();};sc.appendChild(t);});}
+function updateSidebarActive(){document.querySelectorAll(".slide-thumbnail").forEach((th,idx)=>{if(idx===currentSlideIndex){th.classList.add("active");th.scrollIntoView({behavior:"smooth",block:"nearest"});}else th.classList.remove("active");});}
+document.addEventListener("keydown",e=>{switch(e.key){case"ArrowLeft":previousSlide();break;case"ArrowRight":case" ":e.preventDefault();nextSlide();break;case"f":case"F":toggleFullscreen();break;case"s":case"S":toggleSidebar();break;case"?":toggleHelp();break;case"Escape":const sb=document.getElementById("sidebar");const ho=document.getElementById("help-overlay");if(sb.classList.contains("open"))toggleSidebar();else if(!ho.classList.contains("hidden"))ho.classList.add("hidden");break;}});
+generateSidebar();showSlide(0);</script></body></html>
